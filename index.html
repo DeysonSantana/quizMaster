@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Master - Conhecimentos Gerais</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="bg-mesh text-gray-100 flex flex-col min-h-screen">
+
+  <!-- Header / Navigation Bar -->
+  <header class="w-full border-b border-gray-800/80 bg-gray-950/60 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i data-lucide="brain-circuit" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <h1 class="font-display font-bold text-lg tracking-tight text-white leading-none">QuizMaster</h1>
+          <span class="text-[11px] text-gray-400 font-medium">Edição Conhecimentos Gerais</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="sound-toggle-btn" class="p-2 rounded-xl bg-gray-800/80 border border-gray-700/60 hover:bg-gray-700/60 transition-colors" title="Alternar Som">
+          <i data-lucide="volume-2" class="w-5 h-5 text-indigo-400"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+
+    <!-- 1. TELA INICIAL (WELCOME SCREEN) -->
+    <section id="welcome-screen" class="glass-card rounded-3xl p-6 sm:p-10 text-center relative overflow-hidden animate-slide-up">
+      <!-- Glow background decoration -->
+      <div class="absolute -top-24 -left-24 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -right-24 w-64 h-64 bg-pink-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 max-w-2xl mx-auto space-y-6">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
+          <i data-lucide="sparkles" class="w-4 h-4"></i> Desafio de 25 Perguntas
+        </div>
+
+        <h2 class="text-3xl sm:text-5xl font-display font-extrabold tracking-tight text-white leading-tight">
+          Teste seus conhecimentos e aprenda com o <span class="bg-gradient-to-r from-indigo-400 via-pink-400 to-amber-300 bg-clip-text text-transparent">QuizMaster</span>
+        </h2>
+
+        <p class="text-gray-300 text-sm sm:text-base leading-relaxed">
+          Uma jornada interativa e gamificada com 25 perguntas cuidadosamente elaboradas através de 5 temas essenciais:
+          <span class="text-indigo-300 font-medium">História</span>, 
+          <span class="text-emerald-300 font-medium">Geografia</span>, 
+          <span class="text-sky-300 font-medium">Ciência & Tecnologia</span>, 
+          <span class="text-pink-300 font-medium">Arte & Cultura Pop</span> e 
+          <span class="text-amber-300 font-medium">Esportes</span>.
+        </p>
+
+        <!-- Grid de Características -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2 text-left">
+          <div class="p-4 rounded-2xl bg-gray-800/40 border border-gray-700/50 flex flex-col gap-1.5">
+            <div class="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+              <i data-lucide="trending-up" class="w-4 h-4"></i> Dificuldade Progressiva
+            </div>
+            <p class="text-xs text-gray-400">Comece no nível fácil, avance para o médio e chegue ao nível expert.</p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-gray-800/40 border border-gray-700/50 flex flex-col gap-1.5">
+            <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
+              <i data-lucide="lightbulb" class="w-4 h-4"></i> Fator Didático
+            </div>
+            <p class="text-xs text-gray-400">Pílula de curiosidade em cada pergunta para você sempre aprender algo novo.</p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-gray-800/40 border border-gray-700/50 flex flex-col gap-1.5">
+            <div class="flex items-center gap-2 text-indigo-400 font-bold text-sm">
+              <i data-lucide="flame" class="w-4 h-4"></i> Combos e Pontos
+            </div>
+            <p class="text-xs text-gray-400">Acerte em sequência para multiplicar seus pontos e ativar efeitos sonoros.</p>
+          </div>
+        </div>
+
+        <!-- Opções Rápidas -->
+        <div class="flex items-center justify-center gap-6 pt-2">
+          <label class="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-gray-300 hover:text-white transition-colors">
+            <input type="checkbox" id="timer-toggle-checkbox" checked class="w-4 h-4 text-indigo-600 rounded bg-gray-800 border-gray-700 focus:ring-indigo-500 focus:ring-offset-gray-900" />
+            <span>Temporizador de 20s por pergunta</span>
+          </label>
+        </div>
+
+        <!-- Botão Iniciar -->
+        <div class="pt-4">
+          <button id="start-btn" class="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-lg text-white shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center justify-center gap-3">
+            <span>Iniciar Desafio</span>
+            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. TELA DO QUIZ (QUIZ SCREEN) -->
+    <section id="quiz-screen" class="hidden space-y-4 animate-slide-up">
+      
+      <!-- Barra de Progresso e Top Stats -->
+      <div class="glass-card rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between text-xs font-semibold">
+          <div class="flex items-center gap-2">
+            <span id="progress-text" class="text-indigo-300">Pergunta 1 de 25</span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div id="streak-badge" class="hidden px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-extrabold flex items-center gap-1">
+              <i data-lucide="flame" class="w-3.5 h-3.5 fill-amber-400"></i>
+              <span id="streak-count">2x Combo</span>
+            </div>
+
+            <div id="timer-container" class="px-3 py-1 rounded-full bg-gray-800/80 border border-gray-700/60 flex items-center gap-1.5">
+              <i data-lucide="timer" class="w-3.5 h-3.5 text-indigo-400"></i>
+              <span id="timer-display" class="font-mono font-bold text-indigo-300">20s</span>
+            </div>
+
+            <div class="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-bold">
+              <span id="score-badge">0 pts</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+          <div id="progress-bar" class="progress-bar-fill bg-gradient-to-r from-indigo-500 to-pink-500 h-full rounded-full w-0"></div>
+        </div>
+      </div>
+
+      <!-- Card Principal da Pergunta -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 relative overflow-hidden">
+        
+        <!-- Categorias e Dificuldade Badges -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span id="category-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            Ciência e Tecnologia
+          </span>
+          <span id="difficulty-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            Fácil
+          </span>
+        </div>
+
+        <!-- Enunciado da Pergunta -->
+        <h3 id="question-text" class="text-xl sm:text-2xl font-bold text-white leading-relaxed">
+          Carregando pergunta...
+        </h3>
+
+        <!-- Lista de Alternativas (A, B, C, D) -->
+        <div id="options-container" class="grid grid-cols-1 gap-3 pt-2">
+          <!-- Os botões serão inseridos dinamicamente via JS -->
+        </div>
+
+        <!-- Pílula de Curiosidade (Aparece após responder) -->
+        <div id="curiosity-box" class="hidden p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-1">
+          <div class="flex items-center gap-2 text-indigo-300 font-bold text-sm">
+            <i data-lucide="lightbulb" class="w-4 h-4 text-amber-400"></i>
+            <span>Curiosidade Pedagógica</span>
+          </div>
+          <p id="curiosity-text" class="text-sm text-gray-300 leading-relaxed">
+            Explicação didática da resposta correta.
+          </p>
+        </div>
+
+        <!-- Botão Avançar -->
+        <div class="flex justify-end pt-2">
+          <button id="next-btn" class="hidden px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all">
+            <span>Próxima Pergunta</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. TELA DE RESULTADOS (RESULTS SCREEN) -->
+    <section id="results-screen" class="hidden glass-card rounded-3xl p-6 sm:p-10 space-y-8 animate-slide-up">
+      
+      <!-- Cabeçalho de Resultados -->
+      <div class="text-center space-y-3">
+        <div id="performance-badge" class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold border bg-indigo-500/20 text-indigo-300 border-indigo-500/40">
+          🏆 Desafio Concluído!
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-display font-extrabold text-white">
+          Resultado Final
+        </h2>
+        <p class="text-gray-400 text-sm">Confira seu desempenho completo e a análise temática abaixo.</p>
+      </div>
+
+      <!-- Resumo dos Números Chave -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="p-5 rounded-2xl bg-gray-800/50 border border-gray-700/60 text-center space-y-1">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pontuação Total</span>
+          <div id="final-score" class="text-3xl sm:text-4xl font-display font-extrabold text-indigo-400">0</div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-gray-800/50 border border-gray-700/60 text-center space-y-1">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Taxa de Acertos</span>
+          <div id="final-accuracy" class="text-3xl sm:text-4xl font-display font-extrabold text-emerald-400">0%</div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-gray-800/50 border border-gray-700/60 text-center space-y-1">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Maior Combo</span>
+          <div id="final-streak" class="text-3xl sm:text-4xl font-display font-extrabold text-amber-400">0</div>
+        </div>
+      </div>
+
+      <!-- Análise de Desempenho por Categoria -->
+      <div class="space-y-3">
+        <h4 class="text-sm font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400"></i> Desempenho por Categoria
+        </h4>
+        <div id="category-stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <!-- Estatísticas geradas via JS -->
+        </div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="flex flex-wrap items-center justify-center gap-4 pt-2">
+        <button id="restart-btn" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          <span>Jogar Novamente</span>
+        </button>
+
+        <button id="review-wrong-btn" class="px-6 py-3.5 rounded-2xl bg-gray-800 hover:bg-gray-700 font-display font-semibold text-gray-200 border border-gray-700 flex items-center gap-2 transition-all">
+          <i data-lucide="repeat" class="w-4 h-4 text-rose-400"></i>
+          <span>Refazer Apenas Erradas</span>
+        </button>
+      </div>
+
+      <!-- Gabarito e Curiosidades de Todas as Perguntas -->
+      <div class="space-y-4 pt-4 border-t border-gray-800">
+        <h4 class="text-sm font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i> Revisão e Curiosidades das 25 Perguntas
+        </h4>
+        <div id="review-list-container" class="max-h-[480px] overflow-y-auto pr-2 space-y-3">
+          <!-- Lista de revisão preenchida via JS -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full border-t border-gray-800/80 bg-gray-950/40 py-4 text-center text-xs text-gray-500">
+    <p>Quiz de Conhecimentos Gerais &bull; Desenvolvido para Gamificação Educacional</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
