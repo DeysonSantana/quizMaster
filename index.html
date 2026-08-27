@@ -37,6 +37,12 @@
   <!-- Canvas Confetti CDN -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
+  <!-- LZ-String para Compressão de URL -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+
+  <!-- QRCode.js para Geração de QR Code -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="css/styles.css" />
 </head>
@@ -51,11 +57,26 @@
         </div>
         <div>
           <h1 class="font-display font-bold text-lg tracking-tight text-white leading-none">QuizMaster</h1>
-          <span class="text-[11px] text-gray-400 font-medium">Edição Conhecimentos Gerais</span>
+          <span class="text-[11px] text-gray-400 font-medium">Edição Conhecimentos Gerais &amp; Personalizado</span>
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button id="open-my-quizzes-btn" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-semibold text-gray-200 flex items-center gap-1.5 transition-colors">
+          <i data-lucide="folder-kanban" class="w-4 h-4 text-amber-400"></i>
+          <span class="hidden sm:inline">Meus Quizzes</span>
+        </button>
+
+        <button id="header-share-btn" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-semibold text-indigo-300 flex items-center gap-1.5 transition-colors" title="Compartilhar este Quiz">
+          <i data-lucide="share-2" class="w-4 h-4 text-indigo-400"></i>
+          <span class="hidden sm:inline">Compartilhar</span>
+        </button>
+
+        <button id="open-builder-btn" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/30 flex items-center gap-1.5 transition-all">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>Criar Quiz</span>
+        </button>
+
         <button id="sound-toggle-btn" class="p-2 rounded-xl bg-gray-800/80 border border-gray-700/60 hover:bg-gray-700/60 transition-colors" title="Alternar Som">
           <i data-lucide="volume-2" class="w-5 h-5 text-indigo-400"></i>
         </button>
@@ -114,6 +135,55 @@
           </div>
         </div>
 
+        <!-- Seção de Importação CSV / Perguntas Personalizadas -->
+        <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-700/60 space-y-4 text-left">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="file-spreadsheet" class="w-5 h-5 text-indigo-400"></i>
+              <span class="font-bold text-sm text-gray-200">Perguntas Personalizadas (Upload CSV)</span>
+            </div>
+            <button id="download-template-btn" type="button" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Baixar Modelo CSV</span>
+            </button>
+          </div>
+
+          <!-- Drag and Drop Area -->
+          <div id="drop-zone" class="border-2 border-dashed border-gray-700 hover:border-indigo-500/80 rounded-xl p-5 text-center cursor-pointer transition-all bg-gray-950/40 hover:bg-indigo-950/20 group">
+            <input type="file" id="csv-file-input" accept=".csv" class="hidden" />
+            <div class="flex flex-col items-center gap-2 pointer-events-none">
+              <div class="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-400 group-hover:scale-110 flex items-center justify-center transition-transform">
+                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+              </div>
+              <p class="text-xs text-gray-300 font-medium">
+                Arraste seu arquivo <strong class="text-indigo-400">.CSV</strong> aqui ou <span class="text-indigo-400 underline underline-offset-2">clique para selecionar</span>
+              </p>
+              <p class="text-[11px] text-gray-500">Suporta delimitadores com vírgula (,) e ponto-e-vírgula (;)</p>
+            </div>
+          </div>
+
+          <!-- Status do Arquivo / Conjunto Ativo -->
+          <div id="quiz-source-status" class="flex flex-wrap items-center justify-between gap-3 text-xs bg-gray-800/60 p-3 rounded-xl border border-gray-700/50">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="quiz-source-label" class="text-gray-300 font-medium">Perguntas Padrão do QuizMaster (25 questões)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="share-csv-quiz-btn" type="button" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center gap-1.5 transition-colors" title="Gerar link de compartilhamento para este quiz">
+                <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                <span>Gerar Link &amp; QR</span>
+              </button>
+              <button id="reset-default-quiz-btn" type="button" class="hidden text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 transition-colors">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                <span>Restaurar Padrão</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Alerta de Erro ou Sucesso no Upload -->
+          <div id="upload-feedback" class="hidden text-xs p-3 rounded-xl"></div>
+        </div>
+
         <!-- Opções Rápidas -->
         <div class="flex items-center justify-center gap-6 pt-2">
           <label class="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-gray-300 hover:text-white transition-colors">
@@ -123,9 +193,9 @@
         </div>
 
         <!-- Botão Iniciar -->
-        <div class="pt-4">
+        <div class="pt-2">
           <button id="start-btn" class="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-lg text-white shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center justify-center gap-3">
-            <span>Iniciar Desafio</span>
+            <span id="start-btn-text">Iniciar Desafio</span>
             <i data-lucide="arrow-right" class="w-5 h-5"></i>
           </button>
         </div>
@@ -281,6 +351,185 @@
   <footer class="w-full border-t border-gray-800/80 bg-gray-950/40 py-4 text-center text-xs text-gray-500">
     <p>Quiz de Conhecimentos Gerais &bull; Desenvolvido para Gamificação Educacional</p>
   </footer>
+
+  <!-- MODAL 1: CRIADOR VISUAL DE QUIZ -->
+  <div id="quiz-builder-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="glass-card w-full max-w-3xl rounded-3xl p-6 sm:p-8 space-y-6 max-h-[90vh] flex flex-col justify-between my-auto animate-slide-up border border-indigo-500/30">
+      
+      <!-- Topo do Modal -->
+      <div class="flex items-center justify-between border-b border-gray-800 pb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-bold text-lg text-white">Criador de Quiz Personalizado</h3>
+            <p class="text-xs text-gray-400">Monte suas perguntas e gere um link compartilhável instantâneo</p>
+          </div>
+        </div>
+        <button id="close-builder-btn" class="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Corpo com Scroll -->
+      <div class="flex-1 overflow-y-auto pr-2 space-y-5">
+        <!-- Banner de Importação via CSV dentro do Criador -->
+        <div class="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center">
+              <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-gray-200">Importar Perguntas de Planilha CSV</h4>
+              <p class="text-[11px] text-gray-400">Preencha o formulário instantaneamente subindo um arquivo .csv</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="file" id="builder-csv-file-input" accept=".csv" class="hidden" />
+            <button id="builder-csv-upload-btn" type="button" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+              <span>Carregar CSV</span>
+            </button>
+            <button id="builder-csv-template-btn" type="button" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 border border-gray-700 flex items-center gap-1 transition-colors" title="Baixar Modelo CSV">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Modelo</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Metadados do Quiz -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-gray-900/60 border border-gray-800">
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Título do Quiz *</label>
+            <input type="text" id="builder-quiz-title" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Ex: Desafio de Matemática do 3º Ano" required />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-300 mb-1">Nome do Autor / Professor</label>
+            <input type="text" id="builder-quiz-author" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Ex: Prof. Deyson" />
+          </div>
+        </div>
+
+        <!-- Lista Dinâmica de Perguntas -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+              <i data-lucide="list-ordered" class="w-4 h-4 text-indigo-400"></i> Perguntas do Quiz
+            </h4>
+            <div class="flex items-center gap-3">
+              <span id="builder-question-count-badge" class="text-xs text-indigo-400 font-semibold">2 perguntas</span>
+              <button id="add-question-item-btn" type="button" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1">
+                <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Pergunta
+              </button>
+            </div>
+          </div>
+
+          <div id="builder-questions-container" class="space-y-4">
+            <!-- Cards de perguntas adicionados via JS -->
+          </div>
+        </div>
+
+        <!-- Mensagem de Validação / Erro -->
+        <div id="builder-error-msg" class="hidden text-xs p-3 rounded-xl bg-rose-950/60 text-rose-300 border border-rose-700/50"></div>
+      </div>
+
+      <!-- Rodapé com Botões -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-800">
+        <button id="cancel-builder-btn" type="button" class="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 transition-colors">
+          Cancelar
+        </button>
+        <button id="save-builder-quiz-btn" type="button" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-sm text-white shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
+          <span>Salvar &amp; Gerar Link</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL 2: COMPARTILHAMENTO DE QUIZ (LINK & QR CODE) -->
+  <div id="quiz-share-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="glass-card w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 text-center animate-slide-up border border-indigo-500/30">
+      
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <div class="flex items-center gap-2 text-indigo-400">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+          <span class="font-bold text-sm text-white">Quiz Pronto para Compartilhar!</span>
+        </div>
+        <button id="close-share-btn" class="p-1.5 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Info do Quiz -->
+      <div class="space-y-1">
+        <h3 id="share-quiz-title" class="text-xl font-display font-bold text-white">Meu Quiz Personalizado</h3>
+        <p id="share-quiz-info" class="text-xs text-gray-400">10 perguntas • Criado por Prof. Deyson</p>
+      </div>
+
+      <!-- QR Code Canvas -->
+      <div class="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/10 w-fit mx-auto shadow-inner">
+        <div id="share-qrcode-container" class="bg-white p-2 rounded-xl flex items-center justify-center w-[196px] h-[196px] overflow-hidden"></div>
+        <span class="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Aponte a câmera do celular para jogar
+        </span>
+      </div>
+
+      <!-- Link de Compartilhamento -->
+      <div class="space-y-2 text-left">
+        <label class="block text-xs font-semibold text-gray-300">Link Direto do Quiz:</label>
+        <div class="flex items-center gap-2">
+          <input type="text" id="share-url-input" readonly class="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-xs text-indigo-300 font-mono focus:outline-none select-all" />
+          <button id="copy-share-url-btn" type="button" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white whitespace-nowrap flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition-all">
+            <i data-lucide="copy" class="w-4 h-4"></i> Copiar
+          </button>
+        </div>
+        <div id="copy-feedback" class="hidden text-xs text-emerald-400 font-semibold flex items-center gap-1"></div>
+      </div>
+
+      <!-- Botão Jogar Agora -->
+      <div class="pt-2">
+        <button id="play-shared-quiz-btn" type="button" class="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-sm text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all">
+          <i data-lucide="play" class="w-4 h-4"></i>
+          <span>Jogar Este Quiz Agora</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL 3: MEUS QUIZZES SALVOS -->
+  <div id="my-quizzes-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="glass-card w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 max-h-[85vh] flex flex-col justify-between my-auto animate-slide-up border border-indigo-500/30">
+      
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+            <i data-lucide="folder-kanban" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-bold text-lg text-white">Meus Quizzes Salvos</h3>
+            <p class="text-xs text-gray-400">Seus quizzes criados e salvos localmente neste navegador</p>
+          </div>
+        </div>
+        <button id="close-my-quizzes-btn" class="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Lista de Quizzes -->
+      <div id="my-quizzes-list-container" class="flex-1 overflow-y-auto pr-2 space-y-3 max-h-[50vh]">
+        <!-- Itens inseridos dinamicamente via JS -->
+      </div>
+
+      <div class="pt-3 border-t border-gray-800 flex justify-end">
+        <button id="create-first-quiz-btn" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white flex items-center gap-1.5 transition-all">
+          <i data-lucide="plus" class="w-4 h-4"></i> Criar Novo Quiz
+        </button>
+      </div>
+
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script type="module" src="js/app.js"></script>

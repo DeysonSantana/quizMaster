@@ -1,9 +1,17 @@
 import { QUIZ_QUESTIONS } from './questions.js';
 import { soundFx } from './audio.js';
+import { parseCSV, generateCSVTemplate } from './csvParser.js';
+import { decodeQuizFromUrl } from './shareManager.js';
+import { QuizBuilder } from './quizBuilder.js';
 
 class QuizApp {
   constructor() {
-    this.questions = [...QUIZ_QUESTIONS];
+    this.defaultQuestions = [...QUIZ_QUESTIONS];
+    this.activeQuestions = [...QUIZ_QUESTIONS];
+    this.questions = [...this.activeQuestions];
+    this.isCustomQuiz = false;
+    this.customFileName = '';
+
     this.currentIndex = 0;
     this.score = 0;
     this.streak = 0;
@@ -53,20 +61,57 @@ class QuizApp {
       
       // Controls & Buttons
       startBtn: document.getElementById('start-btn'),
+      startBtnText: document.getElementById('start-btn-text'),
       restartBtn: document.getElementById('restart-btn'),
       reviewOnlyWrongBtn: document.getElementById('review-wrong-btn'),
       soundToggleBtn: document.getElementById('sound-toggle-btn'),
-      timerToggleCheckbox: document.getElementById('timer-toggle-checkbox')
+      timerToggleCheckbox: document.getElementById('timer-toggle-checkbox'),
+
+      // CSV & Share Controls
+      dropZone: document.getElementById('drop-zone'),
+      csvFileInput: document.getElementById('csv-file-input'),
+      downloadTemplateBtn: document.getElementById('download-template-btn'),
+      quizSourceLabel: document.getElementById('quiz-source-label'),
+      resetDefaultQuizBtn: document.getElementById('reset-default-quiz-btn'),
+      shareCSVQuizBtn: document.getElementById('share-csv-quiz-btn'),
+      uploadFeedback: document.getElementById('upload-feedback')
     };
 
     this.init();
   }
 
   init() {
+    this.quizBuilder = new QuizBuilder(this);
     this.bindEvents();
+    this.bindCSVUploadEvents();
+    this.checkSharedUrlQuiz();
     this.updateAudioState();
     if (window.lucide) {
       window.lucide.createIcons();
+    }
+  }
+
+  checkSharedUrlQuiz() {
+    const sharedData = decodeQuizFromUrl();
+    if (sharedData && sharedData.questions && sharedData.questions.length > 0) {
+      this.activeQuestions = sharedData.questions;
+      this.isCustomQuiz = true;
+      this.customFileName = sharedData.title || 'Quiz Compartilhado';
+
+      const title = sharedData.title || 'Quiz Personalizado';
+      const author = sharedData.author || 'Autor';
+
+      this.dom.quizSourceLabel.innerHTML = `🔗 <strong class="text-indigo-400">${title}</strong> por ${author} (${sharedData.questions.length} perguntas)`;
+      this.dom.resetDefaultQuizBtn.classList.remove('hidden');
+      if (this.dom.shareCSVQuizBtn) {
+        this.dom.shareCSVQuizBtn.classList.remove('hidden');
+      }
+      if (this.dom.startBtnText) {
+        this.dom.startBtnText.textContent = `Iniciar ${title} (${sharedData.questions.length})`;
+      }
+
+      this.showUploadFeedback(`🎉 <strong>Quiz Compartilhado Carregado!</strong><br>"${title}" por ${author} (${sharedData.questions.length} perguntas). Bom jogo!`, 'success');
+      this.triggerMiniConfetti();
     }
   }
 
@@ -83,7 +128,7 @@ class QuizApp {
 
     this.dom.restartBtn.addEventListener('click', () => {
       soundFx.playClick();
-      this.resetQuiz(QUIZ_QUESTIONS);
+      this.resetQuiz(this.activeQuestions);
       this.startQuiz();
     });
 
@@ -137,6 +182,169 @@ class QuizApp {
     });
   }
 
+  bindCSVUploadEvents() {
+    // Clique na dropzone para abrir seletor
+    if (this.dom.dropZone && this.dom.csvFileInput) {
+      this.dom.dropZone.addEventListener('click', () => {
+        this.dom.csvFileInput.click();
+      });
+
+      this.dom.csvFileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+          this.processCSVFile(file);
+        }
+      });
+
+      // Eventos Drag and Drop
+      ['dragenter', 'dragover'].forEach(eventName => {
+        this.dom.dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.dom.dropZone.classList.add('border-indigo-400', 'bg-indigo-950/40');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        this.dom.dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.dom.dropZone.classList.remove('border-indigo-400', 'bg-indigo-950/40');
+        });
+      });
+
+      this.dom.dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const file = dt.files && dt.files[0];
+        if (file) {
+          this.processCSVFile(file);
+        }
+      });
+    }
+
+    // Download do Modelo CSV
+    if (this.dom.downloadTemplateBtn) {
+      this.dom.downloadTemplateBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        soundFx.playClick();
+        this.downloadCSVTemplate();
+      });
+    }
+
+    // Restaurar perguntas padrão
+    if (this.dom.resetDefaultQuizBtn) {
+      this.dom.resetDefaultQuizBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.restoreDefaultQuestions();
+      });
+    }
+  }
+
+  processCSVFile(file) {
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      this.showUploadFeedback('Por favor, selecione um arquivo com extensão .CSV.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target.result;
+        const result = parseCSV(content);
+
+        if (!result.questions || result.questions.length === 0) {
+          throw new Error('Nenhuma pergunta válida foi encontrada no arquivo.');
+        }
+
+        this.activeQuestions = result.questions;
+        this.isCustomQuiz = true;
+        this.customFileName = file.name;
+
+        // Atualiza UI
+        this.dom.quizSourceLabel.innerHTML = `<strong class="text-indigo-400">${file.name}</strong> (${result.questions.length} perguntas carregadas)`;
+        this.dom.resetDefaultQuizBtn.classList.remove('hidden');
+        if (this.dom.shareCSVQuizBtn) {
+          this.dom.shareCSVQuizBtn.classList.remove('hidden');
+        }
+        if (this.dom.startBtnText) {
+          this.dom.startBtnText.textContent = `Iniciar Quiz Personalizado (${result.questions.length})`;
+        }
+
+        let feedbackMsg = `✅ Sucesso! ${result.questions.length} perguntas importadas e prontas para jogar.`;
+        if (result.warnings && result.warnings.length > 0) {
+          feedbackMsg += `<br><span class="text-amber-300">Avisos (${result.warnings.length}): ${result.warnings[0]}</span>`;
+        }
+
+        this.showUploadFeedback(feedbackMsg, 'success');
+        soundFx.playVictory();
+        this.triggerMiniConfetti();
+
+      } catch (err) {
+        console.error('Erro ao processar CSV:', err);
+        this.showUploadFeedback(`❌ ${err.message}`, 'error');
+        soundFx.playWrong();
+      }
+    };
+
+    reader.onerror = () => {
+      this.showUploadFeedback('Erro ao ler o arquivo selecionado.', 'error');
+      soundFx.playWrong();
+    };
+
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  restoreDefaultQuestions() {
+    this.activeQuestions = [...this.defaultQuestions];
+    this.isCustomQuiz = false;
+    this.customFileName = '';
+
+    this.dom.quizSourceLabel.textContent = `Perguntas Padrão do QuizMaster (${this.defaultQuestions.length} questões)`;
+    this.dom.resetDefaultQuizBtn.classList.add('hidden');
+    if (this.dom.startBtnText) {
+      this.dom.startBtnText.textContent = 'Iniciar Desafio';
+    }
+    if (this.dom.csvFileInput) {
+      this.dom.csvFileInput.value = '';
+    }
+
+    if (window.location.hash) {
+      history.replaceState(null, '', window.location.pathname);
+    }
+
+    this.showUploadFeedback('Perguntas padrão de Conhecimentos Gerais restauradas.', 'info');
+  }
+
+  showUploadFeedback(message, type) {
+    if (!this.dom.uploadFeedback) return;
+
+    this.dom.uploadFeedback.innerHTML = message;
+    this.dom.uploadFeedback.classList.remove('hidden', 'bg-rose-950/60', 'text-rose-300', 'border-rose-700/50', 'bg-emerald-950/60', 'text-emerald-300', 'border-emerald-700/50', 'bg-blue-950/60', 'text-blue-300', 'border-blue-700/50');
+    
+    if (type === 'error') {
+      this.dom.uploadFeedback.classList.add('bg-rose-950/60', 'text-rose-300', 'border', 'border-rose-700/50');
+    } else if (type === 'success') {
+      this.dom.uploadFeedback.classList.add('bg-emerald-950/60', 'text-emerald-300', 'border', 'border-emerald-700/50');
+    } else {
+      this.dom.uploadFeedback.classList.add('bg-blue-950/60', 'text-blue-300', 'border', 'border-blue-700/50');
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  downloadCSVTemplate() {
+    const csvContent = generateCSVTemplate();
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'quiz_modelo.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   updateAudioState() {
     soundFx.muted = !this.soundEnabled;
     if (this.dom.soundToggleBtn) {
@@ -164,7 +372,7 @@ class QuizApp {
     return null;
   }
 
-  resetQuiz(questionList = QUIZ_QUESTIONS) {
+  resetQuiz(questionList = this.activeQuestions) {
     this.questions = [...questionList];
     this.currentIndex = 0;
     this.score = 0;
@@ -175,7 +383,7 @@ class QuizApp {
   }
 
   startQuiz() {
-    this.resetQuiz(this.questions);
+    this.resetQuiz(this.activeQuestions);
     this.showScreen('quiz');
     this.renderQuestion();
   }
@@ -202,8 +410,8 @@ class QuizApp {
     }
 
     // Configura Badges de Categoria e Dificuldade
-    this.dom.categoryBadge.textContent = q.category;
-    this.dom.difficultyBadge.textContent = q.difficulty;
+    this.dom.categoryBadge.textContent = q.category || 'Geral';
+    this.dom.difficultyBadge.textContent = q.difficulty || 'Médio';
 
     // Cores das dificuldades
     this.dom.difficultyBadge.className = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ';
@@ -231,7 +439,7 @@ class QuizApp {
       btn.innerHTML = `
         <div class="flex items-center gap-3.5">
           <span class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm bg-gray-700/80 text-gray-300 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-            ${letters[idx]}
+            ${letters[idx] || (idx + 1)}
           </span>
           <span class="text-base font-medium">${opt}</span>
         </div>
@@ -343,17 +551,17 @@ class QuizApp {
     this.userAnswers.push({
       questionId: q.id,
       question: q.question,
-      category: q.category,
-      difficulty: q.difficulty,
+      category: q.category || 'Geral',
+      difficulty: q.difficulty || 'Médio',
       options: q.options,
       correctAnswer: q.correctAnswer,
       selectedIndex: selectedIndex,
       isCorrect: isCorrect,
-      curiosity: q.curiosity
+      curiosity: q.curiosity || 'Sem curiosidade adicional informada.'
     });
 
     // Exibe Pílula de Curiosidade
-    this.dom.curiosityText.textContent = q.curiosity;
+    this.dom.curiosityText.textContent = q.curiosity || 'Resposta correta registrada!';
     this.dom.curiosityBox.classList.remove('hidden');
     this.dom.curiosityBox.classList.add('animate-slide-up');
 
@@ -417,7 +625,7 @@ class QuizApp {
 
     const totalQuestions = this.questions.length;
     const correctCount = this.userAnswers.filter(a => a.isCorrect).length;
-    const accuracy = Math.round((correctCount / totalQuestions) * 100);
+    const accuracy = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
     this.dom.finalScore.textContent = this.score;
     this.dom.finalAccuracy.textContent = `${accuracy}% (${correctCount}/${totalQuestions})`;
@@ -445,7 +653,7 @@ class QuizApp {
     this.dom.performanceBadge.textContent = badgeText;
     this.dom.performanceBadge.className = `inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold border ${badgeClass}`;
 
-    // Estatísticas por Categoria
+    // Estatísticas por Categoria (Extraídas dinamicamente)
     this.renderCategoryStats();
 
     // Gabarito e Revisão de Curiosidades
@@ -453,23 +661,23 @@ class QuizApp {
   }
 
   renderCategoryStats() {
-    const categories = ['História', 'Geografia', 'Ciência e Tecnologia', 'Arte e Cultura Pop', 'Esportes'];
-    const catStats = {};
-
-    categories.forEach(cat => {
-      catStats[cat] = { total: 0, correct: 0 };
-    });
+    // Extrai todas as categorias presentes nas respostas
+    const categoriesMap = {};
 
     this.userAnswers.forEach(ans => {
-      if (catStats[ans.category]) {
-        catStats[ans.category].total++;
-        if (ans.isCorrect) catStats[ans.category].correct++;
+      const cat = ans.category || 'Geral';
+      if (!categoriesMap[cat]) {
+        categoriesMap[cat] = { total: 0, correct: 0 };
       }
+      categoriesMap[cat].total++;
+      if (ans.isCorrect) categoriesMap[cat].correct++;
     });
 
+    const categoryNames = Object.keys(categoriesMap);
+
     this.dom.categoryStatsContainer.innerHTML = '';
-    categories.forEach(cat => {
-      const stat = catStats[cat];
+    categoryNames.forEach(cat => {
+      const stat = categoriesMap[cat];
       const percent = stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0;
       
       const card = document.createElement('div');
@@ -498,8 +706,8 @@ class QuizApp {
       const item = document.createElement('div');
       item.className = `p-4 rounded-xl border ${ans.isCorrect ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-rose-500/30 bg-rose-950/10'} mb-3`;
       
-      const selectedText = ans.selectedIndex >= 0 ? `${letters[ans.selectedIndex]}) ${ans.options[ans.selectedIndex]}` : 'Tempo Esgotado';
-      const correctText = `${letters[ans.correctAnswer]}) ${ans.options[ans.correctAnswer]}`;
+      const selectedText = ans.selectedIndex >= 0 ? `${letters[ans.selectedIndex] || (ans.selectedIndex + 1)}) ${ans.options[ans.selectedIndex]}` : 'Tempo Esgotado';
+      const correctText = `${letters[ans.correctAnswer] || (ans.correctAnswer + 1)}) ${ans.options[ans.correctAnswer]}`;
 
       item.innerHTML = `
         <div class="flex items-start justify-between gap-3 mb-2">
