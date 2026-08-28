@@ -1,72 +1,71 @@
-# 🧠 QuizMaster - Plataforma Completa de Quizzes, I.A, Contas de Usuário e Salas com Ranking (Estilo Kahoot)
+﻿# 🧠 QuizMaster - Plataforma Gamificada de Quizzes, I.A, Salas de Desafio & Rankings (Estilo Kahoot)
 
-Aplicação web moderna, interativa, gamificada e **100% estática (frontend-only)** projetada para funcionar perfeitamente na **hospedagem gratuita do GitHub Pages**.
+> Aplicação web moderna, interativa, gamificada e **100% estática (frontend-only)** projetada para funcionar com alta performance na **hospedagem gratuita do GitHub Pages**.
 
-Conta com **criação de contas por email/senha**, **banco de dados serverless**, **gerador de quizzes por Inteligência Artificial (Google Gemini)**, **upload CSV**, **compartilhamento portátil por Link/QR Code** e **criação de Salas de Desafio com tempo limite e Ranking de Colocações ao Vivo (estilo Kahoot)**.
+Conta com **Login com Google e Email/Senha**, **Banco de Dados Serverless (Firebase Cloud + LocalStorage)**, **Gerador de Quizzes por I.A (Google Gemini)**, **Upload CSV**, **Compartilhamento por Link Curto/QR Code** e **Salas de Desafio com Tempo Limite e Ranking de Colocações ao Vivo (estilo Kahoot)**.
 
 ---
 
 ## 🌟 Principais Recursos
 
-### 1. 🌐 100% Compatível com GitHub Pages (Sem Servidor Próprio)
-- Toda a lógica roda no navegador (Client-side SPA com módulos ES6).
-- Utiliza **SDKs Serverless** (Firebase Auth + Firestore) com **Banco de Dados Local (LocalStorage/IndexedDB)** nativo como fallback inteligente.
-- Pode ser publicado diretamente em qualquer repositório do GitHub com GitHub Pages ativado em segundos.
+### 1. 🌐 100% Compatível com GitHub Pages (Zero Backend no Servidor)
+- Toda a lógica roda no navegador (Client-side Single Page Application com módulos ES6 nativos).
+- Não requer Node.js, PHP ou Python no servidor de produção.
+- Utiliza **Firebase Cloud SDKs** com fallback inteligente para **Banco de Dados Local (LocalStorage/IndexedDB)**.
 
-### 2. 🔐 Criação de Contas e Autenticação (Email e Senha)
-- Cadastro e login de usuários com email e senha.
-- Modal de perfil com exibição do usuário ativo e opção de logout.
-- Painel **"Conectar Nuvem (Firebase)"** para conectar projetos Firebase gratuitos ou usar o Banco Local offline.
+### 2. 🔐 Autenticação Universal (Google Sign-In & Email/Senha)
+- **Continuar com o Google**: Login instantâneo em 1 clique.
+- **Email e Senha**: Cadastro e autenticação seguros.
+- Sincronização automática de sessão em múltiplos computadores, celulares e tablets.
 
-### 3. 🏆 Salas de Desafio com Tempo Limite e Ranking ao Vivo (Estilo Kahoot)
-- O criador/professor pode abrir uma **Sala de Desafio** para qualquer quiz:
-  - Definir **Duração da Sala** (15 min, 30 min, 1 hora, 2 horas, 24 horas, 7 dias ou Sem limite).
-  - Gerar um **Código PIN de 6 dígitos** (ex: `849201`) e **Link Direto** (`#room=849201`).
-  - QR Code exclusivo da Sala para os participantes escanearem.
-- **Entrada Rápida por PIN**: Participantes entram digitando o PIN na tela inicial ou pelo link.
-- **Pódio e Leaderboard em Tempo Real**:
-  - Pódio dos 3 primeiros colocados (🥇 1º Ouro, 🥈 2º Prata, 🥉 3º Bronze).
-  - Tabela completa de colocações com pontuação, precisão de acertos e combos.
-  - Modo telão/apresentador para projetar em salas de aula ou eventos.
+### 3. 🏆 Salas de Desafio & Pódio em Tempo Real (Estilo Kahoot)
+- Crie salas com **PIN de 6 dígitos** (ex: `779967`) e **QR Code gráfico direto** para leitura instantânea por câmeras de celulares.
+- Configure a duração da sala (15m, 30m, 1h, 2h, 24h, 7 dias ou Sem limite).
+- **Pódio ao Vivo (Top 3)** com medalhas 🥇 1º Ouro, 🥈 2º Prata e 🥉 3º Bronze.
+- Tabela completa de colocações com pontuação, precisão de acertos e combos.
 
-### 4. 🤖 Gerador de Quizzes com Inteligência Artificial (Google Gemini)
-- Digite qualquer tema e a I.A formula perguntas pedagógicas balanceadas com alternativas e curiosidades.
-- Suporte a **Texto Base**: Cole um resumo para extrair perguntas diretamente dele.
-- Seleção de quantidade (5 a 25) e dificuldade (Fácil, Médio, Difícil ou Misto).
+### 4. ⏱️ Temporizador Personalizado por Pergunta & Timeout Inteligente
+- Selecione o ritmo do desafio: `5s (Super Rápido)`, `10s`, `15s`, `20s (Padrão)`, `25s`, `30s` ou `Sem tempo (Livre)`.
+- **Avanço Automático no Timeout**: Ao esgotar o tempo, o sistema não revela o gabarito, zera o combo e passa imediatamente para a próxima pergunta.
 
-### 5. 📁 Importação e Exportação via CSV
-- Carregue planilhas `.CSV` diretamente na tela inicial ou dentro do construtor de quizzes.
-- Suporte automático a separadores `,` e `;` e botão de **"Baixar Modelo CSV"**.
+### 5. 🤖 Gerador de Quizzes com Inteligência Artificial (Google Gemini)
+- Criação pedagógica de quizzes por tema ou a partir de um **Texto Base / Artigo** colado.
+- Suporte a modelos `gemini-2.5-flash` e `gemini-1.5-flash` com geração em JSON estrito.
 
-### 6. 🔗 Compartilhamento Instantâneo por Link e QR Code
-- Quizzes comprimidos em URL (`#quiz=...`) com `LZ-String` e motor próprio de QR Code (Tipos 1 a 40) que funciona sem internet.
+### 6. 📱 Menu Lateral Responsivo (Aside Drawer)
+- Em celulares e tablets, uma experiência limpa com menu lateral deslizante (*glassmorphism*) e navegação com 1 toque.
+
+### 7. 📁 Importação e Exportação via CSV
+- Importe planilhas `.CSV` ou baixe modelos prontos para preenchimento.
 
 ---
 
-## 📂 Estrutura do Projeto
+## 📂 Estrutura de Arquivos
 
 ```
 quiz/
 │
 ├── index.html                  # Interface SPA com todos os modais (Jogo, Criador, I.A, Salas, Auth, Ranking)
+├── ARCHITECTURE.md             # Guia técnico detalhado para Agentes de I.A e Desenvolvedores
+├── README.md                   # Documentação geral do projeto
+├── favicon.svg                 # Ícone do aplicativo
 ├── css/
-│   └── styles.css              # Estilos responsivos, glassmorphism e animações touch
+│   └── styles.css              # Estilos responsivos, animações e glassmorphism
 ├── js/
-│   ├── firebaseConfig.js       # Conector Serverless (Firebase Cloud + LocalDB Fallback)
-│   ├── authManager.js          # Gerenciador de Contas (Email/Senha e Perfil)
+│   ├── app.js                  # Controlador central da aplicação (Ciclo de vida, Teclado, Telas)
+│   ├── firebaseConfig.js       # Conector Serverless (Firebase Cloud + Fallback Local)
+│   ├── authManager.js          # Gerenciador de Autenticação (Google Sign-In e Email/Senha)
 │   ├── roomManager.js          # Gestor de Salas de Desafio, PINs e Duração
-│   ├── leaderboardManager.js   # Ranking em tempo real, Pódio 🥇🥈🥉 e Tabela
-│   ├── aiService.js            # Integração com API Google Gemini
-│   ├── aiQuizModal.js          # Modal do assistente de I.A
-│   ├── questions.js            # 25 perguntas de conhecimentos gerais padrão
+│   ├── leaderboardManager.js   # Ranking em tempo real e Pódio 🥇🥈🥉
+│   ├── quizBuilder.js          # Criador visual de quizzes e persistência em nuvem
+│   ├── aiService.js            # Integração com a API do Google Gemini
+│   ├── aiQuizModal.js          # Modal interativo do assistente de I.A
+│   ├── shareManager.js         # Codificação de URL portátil, encurtador e QR Code
+│   ├── qrcodeEngine.js         # Motor Canvas nativo de alta densidade de QR Code
 │   ├── csvParser.js            # Parser de CSV com detecção de delimitador
-│   ├── qrcodeEngine.js         # Motor nativo de alta densidade de QR Code
-│   ├── shareManager.js         # Codificação de URL compactada e QR Code
-│   ├── quizBuilder.js          # Criador visual de quizzes e Meus Quizzes
-│   ├── audio.js                # Sintetizador de áudio Web Audio API
-│   └── app.js                  # Inicializador central e motor do quiz
-├── quiz_modelo_exemplo.csv      # Arquivo de exemplo pronto para testes
-└── README.md                   # Documentação completa
+│   ├── audio.js                # Sintetizador sonoro via Web Audio API
+│   └── questions.js            # 25 perguntas de conhecimentos gerais padrão
+└── quiz_modelo_exemplo.csv      # Arquivo de exemplo pronto para testes
 ```
 
 ---
@@ -81,10 +80,22 @@ Acesse no seu navegador: **`http://localhost:8000`**
 
 ---
 
-## 🌐 Como Hospedar no GitHub Pages (Gratuito)
+## 🌐 Como Hospedar no GitHub Pages
 
-1. Crie um repositório no seu GitHub (ex: `quizmaster`).
-2. Faça o upload de todos os arquivos da pasta `quiz`.
-3. No repositório no GitHub, vá em **Settings** > **Pages**.
-4. Em **Branch**, selecione `main` (ou `master`) e a pasta `/(root)`.
-5. Clique em **Save**. Em instantes seu quiz estará online no link `https://seu-usuario.github.io/quizmaster/`.
+1. Crie um repositório no seu GitHub (ex: `quizMaster`).
+2. Envie os arquivos do projeto:
+   ```powershell
+   git add .
+   git commit -m "Publicação do QuizMaster"
+   git push -u origin main
+   ```
+3. No repositório no GitHub, vá em **Settings** ➔ **Pages**.
+4. Em **Branch**, selecione `main` (ou `master`) e a pasta `/(root)` e clique em **Save**.
+5. Em cerca de 1 minuto, seu app estará online em: `https://seu-usuario.github.io/quizMaster/`.
+
+---
+
+## 📚 Documentação para Agentes de Inteligência Artificial
+
+Para entender detalhes dos contratos de dados, fluxo de eventos, modelos do Firestore e diretrizes para estender o código, consulte o arquivo:
+👉 [**`ARCHITECTURE.md`**](ARCHITECTURE.md)
