@@ -205,6 +205,33 @@ export async function copyToClipboard(text) {
     return successful;
   } catch (err) {
     console.error('Falha ao copiar texto:', err);
-    return false;
+/**
+ * Encurta URLs longas usando provedores públicos gratuitos (TinyURL / is.gd)
+ */
+export async function shortenUrl(longUrl) {
+  try {
+    const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+    if (response.ok) {
+      const shortUrl = await response.text();
+      if (shortUrl && shortUrl.startsWith('http')) {
+        return shortUrl.trim();
+      }
+    }
+  } catch (e) {
+    console.warn('TinyURL indisponível, tentando is.gd...');
   }
+
+  try {
+    const response = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.shorturl) {
+        return data.shorturl;
+      }
+    }
+  } catch (e) {
+    console.warn('Serviço de encurtamento indisponível, mantendo link original.');
+  }
+
+  return longUrl;
 }

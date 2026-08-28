@@ -1,7 +1,7 @@
 /**
  * Módulo do Criador Visual de Quiz e Gerenciador de Quizzes Salvos (LocalStorage)
  */
-import { encodeQuizToUrl, renderQRCode, copyToClipboard } from './shareManager.js';
+import { encodeQuizToUrl, renderQRCode, copyToClipboard, shortenUrl } from './shareManager.js';
 import { parseCSV, generateCSVTemplate } from './csvParser.js';
 import { AIQuizModal } from './aiQuizModal.js';
 import { soundFx } from './audio.js';
@@ -43,6 +43,8 @@ export class QuizBuilder {
       shareQuizInfo: document.getElementById('share-quiz-info'),
       shareUrlInput: document.getElementById('share-url-input'),
       copyShareUrlBtn: document.getElementById('copy-share-url-btn'),
+      shortenQuizUrlBtn: document.getElementById('shorten-quiz-url-btn'),
+      shortenQuizBtnText: document.getElementById('shorten-quiz-btn-text'),
       copyFeedback: document.getElementById('copy-feedback'),
       qrCodeContainer: document.getElementById('share-qrcode-container'),
       playSharedQuizBtn: document.getElementById('play-shared-quiz-btn'),
@@ -129,6 +131,21 @@ export class QuizBuilder {
       });
     }
 
+    // Encurtar Link do Quiz
+    if (this.dom.shortenQuizUrlBtn) {
+      this.dom.shortenQuizUrlBtn.addEventListener('click', async () => {
+        soundFx.playClick();
+        const currentUrl = this.dom.shareUrlInput.value;
+        if (!currentUrl) return;
+
+        if (this.dom.shortenQuizBtnText) this.dom.shortenQuizBtnText.textContent = 'Encurtando...';
+        const shortUrl = await shortenUrl(currentUrl);
+        this.dom.shareUrlInput.value = shortUrl;
+        if (this.dom.shortenQuizBtnText) this.dom.shortenQuizBtnText.textContent = 'Link Encurtado!';
+        this.showCopyFeedback('Link encurtado com sucesso! ✂️');
+      });
+    }
+
     // Jogar Quiz Compartilhado Imediatamente
     if (this.dom.playSharedQuizBtn) {
       this.dom.playSharedQuizBtn.addEventListener('click', () => {
@@ -184,6 +201,17 @@ export class QuizBuilder {
     }
     if (this.dom.closeMyQuizzesBtn) {
       this.dom.closeMyQuizzesBtn.addEventListener('click', () => this.closeModal(this.dom.myQuizzesModal));
+    }
+
+    const openRoomsFromQuizzesBtn = document.getElementById('open-rooms-from-quizzes-btn');
+    if (openRoomsFromQuizzesBtn) {
+      openRoomsFromQuizzesBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeModal(this.dom.myQuizzesModal);
+        if (this.app.roomManager) {
+          this.app.roomManager.openMyRooms();
+        }
+      });
     }
   }
 

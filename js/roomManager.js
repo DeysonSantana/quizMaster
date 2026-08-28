@@ -3,7 +3,7 @@
  * Funciona no Frontend com suporte a Firebase Firestore e Banco Local
  */
 import { serverlessDB } from './firebaseConfig.js';
-import { encodeQuizToUrl, renderQRCode, copyToClipboard } from './shareManager.js';
+import { encodeQuizToUrl, renderQRCode, copyToClipboard, shortenUrl } from './shareManager.js';
 import { soundFx } from './audio.js';
 
 export class RoomManager {
@@ -33,6 +33,15 @@ export class RoomManager {
       roomExpiresText: document.getElementById('room-expires-text'),
       viewRoomLeaderboardBtn: document.getElementById('view-room-leaderboard-btn'),
       startRoomPlayBtn: document.getElementById('start-room-play-btn'),
+      shortenRoomUrlBtn: document.getElementById('shorten-room-url-btn'),
+      shortenRoomBtnText: document.getElementById('shorten-room-btn-text'),
+
+      // Minhas Salas & Rankings Modal
+      openRoomsListBtn: document.getElementById('open-rooms-list-btn'),
+      myRoomsModal: document.getElementById('my-rooms-modal'),
+      closeMyRoomsBtn: document.getElementById('close-my-rooms-btn'),
+      myRoomsListContainer: document.getElementById('my-rooms-list-container'),
+      createNewRoomFromListBtn: document.getElementById('create-new-room-from-list-btn'),
 
       // PIN Join Box on Welcome Screen
       pinInput: document.getElementById('join-pin-input'),
@@ -59,6 +68,32 @@ export class RoomManager {
     if (this.dom.closeRoomInfoBtn) {
       this.dom.closeRoomInfoBtn.addEventListener('click', () => this.closeRoomInfoModal());
     }
+    if (this.dom.closeMyRoomsBtn) {
+      this.dom.closeMyRoomsBtn.addEventListener('click', () => this.closeModal(this.dom.myRoomsModal));
+    }
+
+    // Abrir Modal de Minhas Salas & Rankings
+    if (this.dom.openRoomsListBtn) {
+      this.dom.openRoomsListBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.openMyRooms();
+      });
+    }
+
+    // Botão Nova Sala a partir da lista
+    if (this.dom.createNewRoomFromListBtn) {
+      this.dom.createNewRoomFromListBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeModal(this.dom.myRoomsModal);
+        const activeQs = this.app.activeQuestions || this.app.defaultQuestions;
+        const currentTitle = this.app.customFileName || 'Quiz de Conhecimentos Gerais';
+        this.openCreateRoomModal({
+          title: currentTitle,
+          author: 'Criador',
+          questions: activeQs
+        });
+      });
+    }
 
     // Submissão do formulário de criação de sala
     if (this.dom.createRoomForm) {
@@ -79,6 +114,21 @@ export class RoomManager {
             this.showCopyFeedback('Link da sala copiado! 🎉');
           }
         }
+      });
+    }
+
+    // Encurtar Link da Sala
+    if (this.dom.shortenRoomUrlBtn) {
+      this.dom.shortenRoomUrlBtn.addEventListener('click', async () => {
+        soundFx.playClick();
+        const originalUrl = this.dom.roomDirectUrlInput.value;
+        if (!originalUrl) return;
+
+        if (this.dom.shortenRoomBtnText) this.dom.shortenRoomBtnText.textContent = 'Encurtando...';
+        const shortUrl = await shortenUrl(originalUrl);
+        this.dom.roomDirectUrlInput.value = shortUrl;
+        if (this.dom.shortenRoomBtnText) this.dom.shortenRoomBtnText.textContent = 'Link Encurtado!';
+        this.showCopyFeedback('Link encurtado gerado! ✂️');
       });
     }
 
@@ -374,5 +424,127 @@ export class RoomManager {
     } catch (e) {
       console.warn('Erro ao processar URL de sala:', e);
     }
+  }
+
+  openMyRooms() {
+    const container = this.dom.myRoomsListContainer;
+    if (!container) return;
+    container.innerHTML = '';
+
+    const rooms = serverlessDB.getLocalRooms();
+    const allScores = serverlessDB.getLocalScores();
+
+    if (rooms.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-8 text-gray-400 space-y-3">
+          <i data-lucide="trophy" class="w-12 h-12 mx-auto text-gray-600"></i>
+          <p class="text-sm">Você ainda não criou nenhuma Sala de Desafio.</p>
+          <p class="text-xs text-gray-500">Crie uma sala a partir de qualquer quiz para gerar um PIN e ver o ranking dos seus alunos!</p>
+        </div>
+      `;
+    } else {
+      rooms.forEach(room => {
+        const roomScores = allScores.filter(s => s.pin === room.pin);
+        const playerCount = roomScores.length;
+        const isExpired = room.expiresAt && new Date(room.expiresAt).getTime() < Date.now();
+
+        const item = document.createElement('div');
+        item.className = `p-4 rounded-2xl ${isExpired ? 'bg-gray-900/50 border-gray-800' : 'bg-gray-900/80 border-amber-500/30'} border flex flex-wrap items-center justify-between gap-3 transition-all`;
+        
+        let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">🟢 Aberta</span>`;
+        if (isExpired) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">⏳ Expirada</span>`;
+        } else if (room.expiresAt) {
+          const expDate = new Date(room.expiresAt);
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">⏱️ Até ${expDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+        }
+
+        item.innerHTML = `
+          <div class="space-y-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="font-mono font-extrabold text-sm px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30">PIN: ${room.pin}</span>
+              <h4 class="font-bold text-sm text-gray-100 truncate max-w-[180px] sm:max-w-[240px]">${this.escapeHtml(room.title)}</h4>
+              ${statusBadge}
+            </div>
+            <div class="text-xs text-gray-400 flex items-center gap-3">
+              <span>Quiz: <strong class="text-gray-300">${this.escapeHtml(room.quizTitle || 'Quiz')}</strong> (${room.questions ? room.questions.length : 0} Qs)</span>
+              <span>•</span>
+              <span class="text-indigo-400 font-semibold"><i data-lucide="users" class="w-3.5 h-3.5 inline mr-1"></i>${playerCount} ${playerCount === 1 ? 'jogador' : 'jogadores'}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button class="view-ranking-btn px-3 py-1.5 rounded-xl bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-500/40 text-xs font-bold transition-all flex items-center gap-1" title="Ver Ranking / Pódio desta Sala">
+              <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-indigo-400"></i> Ranking
+            </button>
+            <button class="view-info-btn px-2.5 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500 hover:text-white border border-amber-500/40 text-xs font-semibold transition-all flex items-center gap-1" title="Ver PIN, Link e QR Code">
+              <i data-lucide="qr-code" class="w-3.5 h-3.5 text-amber-400"></i> Info/QR
+            </button>
+            <button class="play-room-btn px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 text-xs font-semibold transition-all flex items-center gap-1" title="Jogar nesta Sala">
+              <i data-lucide="play" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="delete-room-btn p-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 transition-colors" title="Excluir Sala">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        // Listeners para cada sala
+        item.querySelector('.view-ranking-btn').addEventListener('click', () => {
+          soundFx.playClick();
+          this.closeModal(this.dom.myRoomsModal);
+          if (this.app.leaderboardManager) {
+            this.app.leaderboardManager.openLeaderboard(room.pin);
+          }
+        });
+
+        item.querySelector('.view-info-btn').addEventListener('click', () => {
+          soundFx.playClick();
+          this.closeModal(this.dom.myRoomsModal);
+          this.displayRoomInfo(room);
+        });
+
+        item.querySelector('.play-room-btn').addEventListener('click', () => {
+          soundFx.playClick();
+          this.closeModal(this.dom.myRoomsModal);
+          this.joinRoomByPin(room.pin);
+        });
+
+        item.querySelector('.delete-room-btn').addEventListener('click', () => {
+          if (confirm(`Tem certeza que deseja excluir a sala "${room.title}" (PIN: ${room.pin})?`)) {
+            const updatedRooms = serverlessDB.getLocalRooms().filter(r => r.pin !== room.pin);
+            serverlessDB.saveLocalRooms(updatedRooms);
+            this.openMyRooms();
+          }
+        });
+
+        container.appendChild(item);
+      });
+    }
+
+    this.openModal(this.dom.myRoomsModal);
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  openModal(modal) {
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  closeModal(modal) {
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 }
