@@ -3,6 +3,9 @@ import { soundFx } from './audio.js';
 import { parseCSV, generateCSVTemplate } from './csvParser.js';
 import { decodeQuizFromUrl } from './shareManager.js';
 import { QuizBuilder } from './quizBuilder.js';
+import { AuthManager } from './authManager.js';
+import { RoomManager } from './roomManager.js';
+import { LeaderboardManager } from './leaderboardManager.js';
 
 class QuizApp {
   constructor() {
@@ -82,7 +85,11 @@ class QuizApp {
   }
 
   init() {
+    this.authManager = new AuthManager(this);
     this.quizBuilder = new QuizBuilder(this);
+    this.roomManager = new RoomManager(this);
+    this.leaderboardManager = new LeaderboardManager(this);
+
     this.bindEvents();
     this.bindCSVUploadEvents();
     this.checkSharedUrlQuiz();
@@ -668,6 +675,11 @@ class QuizApp {
 
     // Gabarito e Revisão de Curiosidades
     this.renderReviewList();
+
+    // Se estiver participando de uma sala de desafio (PIN), grava no ranking
+    if (this.leaderboardManager && this.leaderboardManager.activeRoomForPlayer) {
+      this.leaderboardManager.recordPlayerScore(this.score, accuracy, this.maxStreak);
+    }
   }
 
   renderCategoryStats() {

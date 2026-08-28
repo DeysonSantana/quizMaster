@@ -46,6 +46,7 @@ export class QuizBuilder {
       copyFeedback: document.getElementById('copy-feedback'),
       qrCodeContainer: document.getElementById('share-qrcode-container'),
       playSharedQuizBtn: document.getElementById('play-shared-quiz-btn'),
+      createRoomFromShareBtn: document.getElementById('create-room-from-share-btn'),
       shareCSVQuizBtn: document.getElementById('share-csv-quiz-btn'),
       headerShareBtn: document.getElementById('header-share-btn'),
 
@@ -144,6 +145,17 @@ export class QuizBuilder {
           }
         }
         this.app.startQuiz();
+      });
+    }
+
+    // Criar Sala de Desafio (Ranking Ao Vivo) a partir do Share Modal
+    if (this.dom.createRoomFromShareBtn) {
+      this.dom.createRoomFromShareBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeModal(this.dom.shareModal);
+        if (this.app.roomManager && this.currentShareQuizData) {
+          this.app.roomManager.openCreateRoomModal(this.currentShareQuizData);
+        }
       });
     }
 
@@ -526,6 +538,7 @@ export class QuizBuilder {
       id: this.editingQuizId || 'quiz_' + Date.now(),
       title: title,
       author: author,
+      userId: this.app.authManager && this.app.authManager.currentUser ? this.app.authManager.currentUser.uid : null,
       updatedAt: new Date().toISOString(),
       questions: questions
     };
@@ -636,6 +649,9 @@ export class QuizBuilder {
             <span class="text-xs text-gray-400">${quiz.questions.length} perguntas • Autor: ${this.escapeHtml(quiz.author || 'Você')}</span>
           </div>
           <div class="flex items-center gap-2">
+            <button class="room-quiz-btn px-2.5 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500 hover:text-white border border-amber-500/40 text-xs font-bold transition-all flex items-center gap-1" title="Criar Sala de Desafio (Kahoot)">
+              <i data-lucide="trophy" class="w-3.5 h-3.5"></i> Sala
+            </button>
             <button class="play-quiz-btn px-3 py-1.5 rounded-xl bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-500/40 text-xs font-bold transition-all flex items-center gap-1">
               <i data-lucide="play" class="w-3.5 h-3.5"></i> Jogar
             </button>
@@ -652,6 +668,14 @@ export class QuizBuilder {
         `;
 
         // Ações de cada quiz salvo
+        item.querySelector('.room-quiz-btn').addEventListener('click', () => {
+          soundFx.playClick();
+          this.closeModal(this.dom.myQuizzesModal);
+          if (this.app.roomManager) {
+            this.app.roomManager.openCreateRoomModal(quiz);
+          }
+        });
+
         item.querySelector('.play-quiz-btn').addEventListener('click', () => {
           soundFx.playClick();
           this.closeModal(this.dom.myQuizzesModal);
