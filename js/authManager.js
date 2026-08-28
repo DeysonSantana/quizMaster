@@ -33,6 +33,7 @@ export class AuthManager {
       authPasswordInput: document.getElementById('auth-password-input'),
       authToggleModeBtn: document.getElementById('auth-toggle-mode-btn'),
       authToggleModeText: document.getElementById('auth-toggle-mode-text'),
+      googleAuthBtn: document.getElementById('google-auth-btn'),
       authErrorMsg: document.getElementById('auth-error-msg'),
 
       // User Profile / Settings Modal
@@ -146,11 +147,19 @@ export class AuthManager {
       });
     }
 
-    // Submissão do Formulário de Auth
+    // Submissão do Formulário de Auth (Email e Senha)
     if (this.dom.authForm) {
       this.dom.authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         await this.handleAuthSubmit();
+      });
+    }
+
+    // Login com o Google
+    if (this.dom.googleAuthBtn) {
+      this.dom.googleAuthBtn.addEventListener('click', async () => {
+        soundFx.playClick();
+        await this.handleGoogleAuth();
       });
     }
 
@@ -279,6 +288,39 @@ export class AuthManager {
     } finally {
       this.dom.authSubmitBtn.disabled = false;
       this.dom.authSubmitBtn.classList.remove('opacity-60');
+    }
+  }
+
+  async handleGoogleAuth() {
+    this.showAuthError('');
+    try {
+      await this.loginWithGoogle();
+      this.closeAuthModal();
+      soundFx.playVictory();
+      this.updateUI();
+      this.notifyListeners();
+    } catch (err) {
+      console.error('Erro no login com Google:', err);
+      this.showAuthError(`❌ ${err.message}`);
+      soundFx.playWrong();
+    }
+  }
+
+  async loginWithGoogle() {
+    if (serverlessDB.isCloudEnabled && serverlessDB.auth) {
+      const { GoogleAuthProvider, signInWithPopup } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
+      const provider = new GoogleAuthProvider();
+      const cred = await signInWithPopup(serverlessDB.auth, provider);
+      this.currentUser = {
+        uid: cred.user.uid,
+        email: cred.user.email,
+        name: cred.user.displayName || cred.user.email.split('@')[0],
+        provider: 'google'
+      };
+      this.saveSessionUser(this.currentUser);
+      return this.currentUser;
+    } else {
+      throw new Error('O Login com o Google requer a nuvem Firebase configurada.');
     }
   }
 

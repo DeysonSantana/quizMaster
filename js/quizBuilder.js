@@ -23,6 +23,7 @@ export class QuizBuilder {
       cancelBuilderBtn: document.getElementById('cancel-builder-btn'),
       builderTitleInput: document.getElementById('builder-quiz-title'),
       builderAuthorInput: document.getElementById('builder-quiz-author'),
+      builderTimerSelect: document.getElementById('builder-quiz-timer'),
       builderQuestionsContainer: document.getElementById('builder-questions-container'),
       addQuestionBtn: document.getElementById('add-question-item-btn'),
       builderQuestionCountBadge: document.getElementById('builder-question-count-badge'),
@@ -347,6 +348,9 @@ export class QuizBuilder {
       this.editingQuizId = quizToEdit.id;
       this.dom.builderTitleInput.value = quizToEdit.title || '';
       this.dom.builderAuthorInput.value = quizToEdit.author || '';
+      if (this.dom.builderTimerSelect) {
+        this.dom.builderTimerSelect.value = quizToEdit.timerSeconds !== undefined ? quizToEdit.timerSeconds : 20;
+      }
       
       quizToEdit.questions.forEach(q => {
         this.addQuestionCard(q);
@@ -355,6 +359,9 @@ export class QuizBuilder {
       this.editingQuizId = null;
       this.dom.builderTitleInput.value = '';
       this.dom.builderAuthorInput.value = '';
+      if (this.dom.builderTimerSelect) {
+        this.dom.builderTimerSelect.value = 20;
+      }
       // Adiciona 2 perguntas em branco para começar
       this.addQuestionCard();
       this.addQuestionCard();
@@ -560,16 +567,19 @@ export class QuizBuilder {
       return;
     }
 
+    const timerSeconds = this.dom.builderTimerSelect ? parseInt(this.dom.builderTimerSelect.value, 10) : 20;
+
     const quizData = {
       id: this.editingQuizId || 'quiz_' + Date.now(),
       title: title,
       author: author,
+      timerSeconds: isNaN(timerSeconds) ? 20 : timerSeconds,
       userId: this.app.authManager && this.app.authManager.currentUser ? this.app.authManager.currentUser.uid : null,
       updatedAt: new Date().toISOString(),
       questions: questions
     };
 
-    // Salva no LocalStorage
+    // Salva no LocalStorage e Nuvem
     this.saveQuizToStorage(quizData);
 
     // Fecha o builder e abre o modal de compartilhamento
@@ -580,7 +590,12 @@ export class QuizBuilder {
     this.app.activeQuestions = questions;
     this.app.isCustomQuiz = true;
     this.app.customFileName = title;
-    this.app.dom.quizSourceLabel.innerHTML = `<strong class="text-indigo-400">${title}</strong> por ${author} (${questions.length} perguntas)`;
+    this.app.timerSeconds = quizData.timerSeconds > 0 ? quizData.timerSeconds : 20;
+    this.app.timerEnabled = quizData.timerSeconds > 0;
+    if (this.app.dom.welcomeTimerSelect) {
+      this.app.dom.welcomeTimerSelect.value = quizData.timerSeconds;
+    }
+    this.app.dom.quizSourceLabel.innerHTML = `<strong class="text-indigo-400">${title}</strong> por ${author} (${questions.length} perguntas • ${quizData.timerSeconds > 0 ? quizData.timerSeconds + 's' : 'Sem tempo'})`;
     this.app.dom.resetDefaultQuizBtn.classList.remove('hidden');
     if (this.app.dom.shareCSVQuizBtn) {
       this.app.dom.shareCSVQuizBtn.classList.remove('hidden');
@@ -742,7 +757,12 @@ export class QuizBuilder {
           this.app.activeQuestions = quiz.questions;
           this.app.isCustomQuiz = true;
           this.app.customFileName = quiz.title;
-          this.app.dom.quizSourceLabel.innerHTML = `<strong class="text-indigo-400">${quiz.title}</strong> (${quiz.questions.length} perguntas)`;
+          this.app.timerSeconds = (quiz.timerSeconds !== undefined && quiz.timerSeconds > 0) ? quiz.timerSeconds : 20;
+          this.app.timerEnabled = (quiz.timerSeconds === undefined || quiz.timerSeconds > 0);
+          if (this.app.dom.welcomeTimerSelect) {
+            this.app.dom.welcomeTimerSelect.value = quiz.timerSeconds !== undefined ? quiz.timerSeconds : 20;
+          }
+          this.app.dom.quizSourceLabel.innerHTML = `<strong class="text-indigo-400">${quiz.title}</strong> (${quiz.questions.length} perguntas • ${this.app.timerEnabled ? this.app.timerSeconds + 's' : 'Sem tempo'})`;
           this.app.dom.resetDefaultQuizBtn.classList.remove('hidden');
           if (this.app.dom.shareCSVQuizBtn) {
             this.app.dom.shareCSVQuizBtn.classList.remove('hidden');
@@ -762,11 +782,24 @@ export class QuizBuilder {
           this.openBuilder(quiz);
         });
 
-        item.querySelector('.delete-quiz-btn').addEventListener('click', () => {
+        item.querySelector('.delete-quiz-btn').addEventListener('click', async () => {
           if (confirm(`Tem certeza que deseja excluir o quiz "${quiz.title}"?`)) {
+            soundFx.playClick();
+            // 1. Remove do LocalStorage
             const updated = this.getSavedQuizzes().filter(q => q.id !== quiz.id);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-            this.openMyQuizzes();
+
+            // 2. Remove do Firebase Firestore
+            if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+              try {
+                const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+                await deleteDoc(doc(serverlessDB.firestore, 'user_quizzes', quiz.id));
+              } catch (err) {
+                console.warn('Erro ao excluir quiz do Firestore:', err);
+              }
+            }
+
+            await this.openMyQuizzes();
           }
         });
 

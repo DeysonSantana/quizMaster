@@ -70,6 +70,7 @@ class QuizApp {
       reviewOnlyWrongBtn: document.getElementById('review-wrong-btn'),
       soundToggleBtn: document.getElementById('sound-toggle-btn'),
       timerToggleCheckbox: document.getElementById('timer-toggle-checkbox'),
+      welcomeTimerSelect: document.getElementById('welcome-timer-select'),
 
       // CSV & Share Controls
       dropZone: document.getElementById('drop-zone'),
@@ -183,7 +184,17 @@ class QuizApp {
       });
     }
 
-    if (this.dom.timerToggleCheckbox) {
+    if (this.dom.welcomeTimerSelect) {
+      this.dom.welcomeTimerSelect.addEventListener('change', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (val > 0) {
+          this.timerEnabled = true;
+          this.timerSeconds = val;
+        } else {
+          this.timerEnabled = false;
+        }
+      });
+    } else if (this.dom.timerToggleCheckbox) {
       this.dom.timerToggleCheckbox.addEventListener('change', (e) => {
         this.timerEnabled = e.target.checked;
       });
@@ -641,10 +652,47 @@ class QuizApp {
   handleAnswer(selectedIndex) {
     clearInterval(this.timerInterval);
     const q = this.questions[this.currentIndex];
-    const isCorrect = selectedIndex === q.correctAnswer;
+    const isTimeout = selectedIndex === -1;
+    const isCorrect = !isTimeout && selectedIndex === q.correctAnswer;
     const optionButtons = this.dom.optionsContainer.querySelectorAll('button');
 
-    // Desativa todos os botões
+    // Se o tempo esgotou: não revela a resposta certa, toca som e passa imediatamente para a próxima
+    if (isTimeout) {
+      this.streak = 0;
+      soundFx.playWrong();
+
+      optionButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add('opacity-40');
+      });
+
+      if (this.dom.timerDisplay) {
+        this.dom.timerDisplay.textContent = '0s';
+        this.dom.timerDisplay.classList.add('text-rose-500', 'animate-pulse');
+      }
+
+      // Salva histórico da resposta não respondida
+      this.userAnswers.push({
+        questionId: q.id,
+        question: q.question,
+        category: q.category || 'Geral',
+        difficulty: q.difficulty || 'Médio',
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        selectedIndex: -1,
+        isCorrect: false,
+        timeOut: true,
+        curiosity: q.curiosity || 'Tempo de resposta esgotado.'
+      });
+
+      // Avança diretamente para a próxima questão após breve transição de 400ms
+      setTimeout(() => {
+        this.goToNextQuestion();
+      }, 400);
+      return;
+    }
+
+    // Desativa todos os botões e destaca acerto/erro
     optionButtons.forEach((btn, idx) => {
       btn.disabled = true;
       const statusIcon = btn.querySelector('.status-icon');

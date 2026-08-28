@@ -519,11 +519,25 @@ export class RoomManager {
           this.joinRoomByPin(room.pin);
         });
 
-        item.querySelector('.delete-room-btn').addEventListener('click', () => {
+        item.querySelector('.delete-room-btn').addEventListener('click', async () => {
           if (confirm(`Tem certeza que deseja excluir a sala "${room.title}" (PIN: ${room.pin})?`)) {
+            soundFx.playClick();
+            
+            // 1. Remove do LocalStorage
             const updatedRooms = serverlessDB.getLocalRooms().filter(r => r.pin !== room.pin);
             serverlessDB.saveLocalRooms(updatedRooms);
-            this.openMyRooms();
+
+            // 2. Remove do Firebase Firestore
+            if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+              try {
+                const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+                await deleteDoc(doc(serverlessDB.firestore, 'quiz_rooms', room.pin));
+              } catch (err) {
+                console.warn('Erro ao excluir sala do Firestore:', err);
+              }
+            }
+
+            await this.openMyRooms();
           }
         });
 
