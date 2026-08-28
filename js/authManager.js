@@ -347,8 +347,17 @@ export class AuthManager {
     // 2. Modo Banco Local
     const users = serverlessDB.getLocalUsers();
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (!user || user.passwordHash !== btoa(password)) {
-      throw new Error('Email ou senha incorretos.');
+    
+    if (!user) {
+      throw new Error(
+        'Conta não encontrada neste dispositivo.\n' +
+        'No modo padrão do GitHub Pages (sem servidor próprio), os dados locais ficam salvos apenas no aparelho onde foram criados.\n' +
+        '👉 Para acessar a mesma conta em qualquer celular ou PC, configure o Firebase gratuito nas "Configurações de Nuvem" ou crie a conta neste celular.'
+      );
+    }
+
+    if (user.passwordHash !== btoa(password)) {
+      throw new Error('Senha incorreta para este email.');
     }
 
     this.currentUser = {
