@@ -1,9 +1,7 @@
-/**
- * Módulo do Criador Visual de Quiz e Gerenciador de Quizzes Salvos (LocalStorage)
- */
 import { encodeQuizToUrl, renderQRCode, copyToClipboard, shortenUrl } from './shareManager.js';
 import { parseCSV, generateCSVTemplate } from './csvParser.js';
 import { AIQuizModal } from './aiQuizModal.js';
+import { serverlessDB } from './firebaseConfig.js';
 import { soundFx } from './audio.js';
 
 const STORAGE_KEY = 'QUIZMASTER_USER_QUIZZES';
@@ -592,7 +590,7 @@ export class QuizBuilder {
     }
   }
 
-  saveQuizToStorage(quizData) {
+  async saveQuizToStorage(quizData) {
     try {
       const list = this.getSavedQuizzes();
       const existingIdx = list.findIndex(q => q.id === quizData.id);
@@ -602,8 +600,14 @@ export class QuizBuilder {
         list.unshift(quizData);
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+
+      // Salva no Firebase Cloud Firestore
+      if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        await setDoc(doc(serverlessDB.firestore, 'user_quizzes', quizData.id), quizData);
+      }
     } catch (e) {
-      console.warn('Não foi possível salvar quiz no localStorage:', e);
+      console.warn('Não foi possível salvar quiz na nuvem/storage:', e);
     }
   }
 
@@ -645,9 +649,37 @@ export class QuizBuilder {
     }, 3500);
   }
 
-  openMyQuizzes() {
-    const list = this.getSavedQuizzes();
+  async openMyQuizzes() {
+    let list = this.getSavedQuizzes();
     const container = this.dom.myQuizzesListContainer;
+    container.innerHTML = `
+      <div class="text-center py-6 text-indigo-300 flex items-center justify-center gap-2">
+        <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Sincronizando seus quizzes na nuvem...
+      </div>
+    `;
+    this.openModal(this.dom.myQuizzesModal);
+    if (window.lucide) window.lucide.createIcons();
+
+    // Sincroniza com Firebase Cloud Firestore
+    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+      try {
+        const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        const snap = await getDocs(collection(serverlessDB.firestore, 'user_quizzes'));
+        const cloudQuizzes = [];
+        snap.forEach(docSnap => cloudQuizzes.push(docSnap.data()));
+
+        if (cloudQuizzes.length > 0) {
+          const mergedMap = new Map();
+          list.forEach(q => mergedMap.set(q.id, q));
+          cloudQuizzes.forEach(q => mergedMap.set(q.id, q));
+          list = Array.from(mergedMap.values()).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        }
+      } catch (err) {
+        console.warn('Falha ao sincronizar quizzes da nuvem:', err);
+      }
+    }
+
     container.innerHTML = '';
 
     if (list.length === 0) {

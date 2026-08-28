@@ -250,39 +250,10 @@ export class RoomManager {
     this.currentRoom = roomData;
 
     const baseUrl = window.location.href.split('#')[0].split('?')[0];
-    
-    // Codifica payload portátil da sala para funcionar em qualquer dispositivo/celular
-    let roomUrl = `${baseUrl}#room=${roomData.pin}`;
-    try {
-      const minifiedRoom = {
-        p: roomData.pin,
-        t: roomData.title,
-        q: roomData.quizTitle,
-        a: roomData.author,
-        e: roomData.expiresAt,
-        k: (roomData.questions || []).map(item => [
-          item.question,
-          item.category || 'Geral',
-          item.difficulty || 'Fácil',
-          item.options,
-          item.correctAnswer,
-          item.curiosity || ''
-        ])
-      };
-      const jsonStr = JSON.stringify(minifiedRoom);
-      let payload = '';
-      if (window.LZString && typeof window.LZString.compressToEncodedURIComponent === 'function') {
-        payload = window.LZString.compressToEncodedURIComponent(jsonStr);
-      } else {
-        payload = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
-      }
-      roomUrl = `${baseUrl}#room=${roomData.pin}&d=${payload}`;
-    } catch (e) {
-      console.warn('Erro ao codificar payload da sala:', e);
-    }
+    const roomDirectPinUrl = `${baseUrl}#room=${roomData.pin}`;
 
     if (this.dom.roomPinDisplay) this.dom.roomPinDisplay.textContent = roomData.pin;
-    if (this.dom.roomDirectUrlInput) this.dom.roomDirectUrlInput.value = roomUrl;
+    if (this.dom.roomDirectUrlInput) this.dom.roomDirectUrlInput.value = roomDirectPinUrl;
 
     if (this.dom.roomExpiresText) {
       if (roomData.expiresAt) {
@@ -293,9 +264,9 @@ export class RoomManager {
       }
     }
 
-    // Renderiza QR Code da Sala
+    // Renderiza QR Code visual de alta densidade direto com o PIN da Sala
     if (this.dom.roomQrContainer) {
-      renderQRCode(this.dom.roomQrContainer, roomUrl);
+      renderQRCode(this.dom.roomQrContainer, roomDirectPinUrl);
     }
 
     // Ações dos botões da sala
@@ -426,13 +397,50 @@ export class RoomManager {
     }
   }
 
-  openMyRooms() {
+  async openMyRooms() {
     const container = this.dom.myRoomsListContainer;
     if (!container) return;
-    container.innerHTML = '';
+    container.innerHTML = `
+      <div class="text-center py-6 text-amber-300 flex items-center justify-center gap-2">
+        <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Sincronizando salas na nuvem...
+      </div>
+    `;
+    this.openModal(this.dom.myRoomsModal);
+    if (window.lucide) window.lucide.createIcons();
 
-    const rooms = serverlessDB.getLocalRooms();
+    let rooms = serverlessDB.getLocalRooms();
     const allScores = serverlessDB.getLocalScores();
+    const roomScoreCounts = new Map();
+
+    // Sincroniza salas do Firebase Cloud Firestore
+    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+      try {
+        const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        const snap = await getDocs(collection(serverlessDB.firestore, 'quiz_rooms'));
+        const cloudRooms = [];
+        snap.forEach(docSnap => cloudRooms.push(docSnap.data()));
+
+        if (cloudRooms.length > 0) {
+          const roomMap = new Map();
+          rooms.forEach(r => roomMap.set(r.pin, r));
+          cloudRooms.forEach(r => roomMap.set(r.pin, r));
+          rooms = Array.from(roomMap.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          serverlessDB.saveLocalRooms(rooms);
+        }
+
+        // Busca contagem de scores para cada sala no Firestore
+        await Promise.all(rooms.map(async (room) => {
+          try {
+            const scoreSnap = await getDocs(collection(serverlessDB.firestore, `quiz_rooms/${room.pin}/scores`));
+            roomScoreCounts.set(room.pin, scoreSnap.size);
+          } catch (e) {}
+        }));
+      } catch (err) {
+        console.warn('Falha ao sincronizar salas da nuvem:', err);
+      }
+    }
+
+    container.innerHTML = '';
 
     if (rooms.length === 0) {
       container.innerHTML = `
@@ -444,8 +452,9 @@ export class RoomManager {
       `;
     } else {
       rooms.forEach(room => {
-        const roomScores = allScores.filter(s => s.pin === room.pin);
-        const playerCount = roomScores.length;
+        const cloudCount = roomScoreCounts.get(room.pin);
+        const localCount = allScores.filter(s => s.pin === room.pin).length;
+        const playerCount = cloudCount !== undefined ? cloudCount : localCount;
         const isExpired = room.expiresAt && new Date(room.expiresAt).getTime() < Date.now();
 
         const item = document.createElement('div');
