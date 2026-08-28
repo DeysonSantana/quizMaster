@@ -200,7 +200,36 @@ export class RoomManager {
     this.currentRoom = roomData;
 
     const baseUrl = window.location.href.split('#')[0].split('?')[0];
-    const roomUrl = `${baseUrl}#room=${roomData.pin}`;
+    
+    // Codifica payload portátil da sala para funcionar em qualquer dispositivo/celular
+    let roomUrl = `${baseUrl}#room=${roomData.pin}`;
+    try {
+      const minifiedRoom = {
+        p: roomData.pin,
+        t: roomData.title,
+        q: roomData.quizTitle,
+        a: roomData.author,
+        e: roomData.expiresAt,
+        k: (roomData.questions || []).map(item => [
+          item.question,
+          item.category || 'Geral',
+          item.difficulty || 'Fácil',
+          item.options,
+          item.correctAnswer,
+          item.curiosity || ''
+        ])
+      };
+      const jsonStr = JSON.stringify(minifiedRoom);
+      let payload = '';
+      if (window.LZString && typeof window.LZString.compressToEncodedURIComponent === 'function') {
+        payload = window.LZString.compressToEncodedURIComponent(jsonStr);
+      } else {
+        payload = encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
+      }
+      roomUrl = `${baseUrl}#room=${roomData.pin}&d=${payload}`;
+    } catch (e) {
+      console.warn('Erro ao codificar payload da sala:', e);
+    }
 
     if (this.dom.roomPinDisplay) this.dom.roomPinDisplay.textContent = roomData.pin;
     if (this.dom.roomDirectUrlInput) this.dom.roomDirectUrlInput.value = roomUrl;
@@ -243,16 +272,40 @@ export class RoomManager {
 
   async joinRoomByPin(pin) {
     try {
-      const room = await this.getRoom(pin);
+      const cleanPin = pin.trim();
+      let room = await this.getRoom(cleanPin);
+
       if (!room) {
-        alert(`❌ Sala com PIN "${pin}" não foi encontrada.`);
-        soundFx.playWrong();
-        return;
+        // Se o PIN não foi encontrado localmente neste dispositivo
+        // Verifica se o usuário deseja entrar no quiz ativo ou padrão associando ao PIN
+        const activeQs = this.app.activeQuestions || this.app.defaultQuestions;
+        const confirmJoin = confirm(
+          `A sala PIN "${cleanPin}" foi criada em outro aparelho.\n\n` +
+          `Para carregar o quiz personalizado exato do professor, escaneie o QR Code ou abra o link direto compartilhado.\n\n` +
+          `Deseja disputar o ranking com o conjunto de perguntas disponível neste dispositivo agora?`
+        );
+
+        if (confirmJoin) {
+          room = {
+            pin: cleanPin,
+            title: `Sala ${cleanPin}`,
+            quizTitle: this.app.customFileName || 'QuizMaster',
+            author: 'Criador',
+            questions: activeQs,
+            createdAt: new Date().toISOString(),
+            expiresAt: null,
+            active: true
+          };
+          await this.saveRoom(room);
+        } else {
+          soundFx.playWrong();
+          return;
+        }
       }
 
       // Verifica expiração
       if (room.expiresAt && new Date(room.expiresAt).getTime() < Date.now()) {
-        alert(`⏳ A sala com PIN "${pin}" já expirou.`);
+        alert(`⏳ A sala com PIN "${cleanPin}" já expirou.`);
         soundFx.playWrong();
         return;
       }
@@ -268,12 +321,58 @@ export class RoomManager {
   }
 
   checkUrlForRoomPin() {
-    const hash = window.location.hash;
-    if (hash && hash.startsWith('#room=')) {
-      const pin = hash.replace('#room=', '').trim();
+    try {
+      const hash = window.location.hash;
+      if (!hash || !hash.includes('#room=')) return;
+
+      // Extrai PIN e payload opcional
+      const paramsStr = hash.replace('#room=', '');
+      const parts = paramsStr.split('&d=');
+      const pin = parts[0].trim();
+      const rawPayload = parts[1] || '';
+
+      if (rawPayload) {
+        let jsonStr = '';
+        if (window.LZString && typeof window.LZString.decompressFromEncodedURIComponent === 'function') {
+          jsonStr = window.LZString.decompressFromEncodedURIComponent(rawPayload);
+        }
+        if (!jsonStr) {
+          try {
+            jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(rawPayload))));
+          } catch (e) {}
+        }
+
+        if (jsonStr) {
+          const parsed = JSON.parse(jsonStr);
+          const restoredRoom = {
+            pin: parsed.p || pin,
+            title: parsed.t || `Sala ${pin}`,
+            quizTitle: parsed.q || 'Quiz',
+            author: parsed.a || 'Professor',
+            expiresAt: parsed.e || null,
+            active: true,
+            createdAt: new Date().toISOString(),
+            questions: (parsed.k || []).map((item, idx) => ({
+              id: idx + 1,
+              question: item[0] || '',
+              category: item[1] || 'Geral',
+              difficulty: item[2] || 'Fácil',
+              options: item[3] || ['', '', '', ''],
+              correctAnswer: typeof item[4] === 'number' ? item[4] : 0,
+              curiosity: item[5] || 'Resposta correta registrada!'
+            }))
+          };
+
+          // Salva automaticamente no dispositivo do jogador
+          this.saveRoom(restoredRoom);
+        }
+      }
+
       if (pin) {
         setTimeout(() => this.joinRoomByPin(pin), 300);
       }
+    } catch (e) {
+      console.warn('Erro ao processar URL de sala:', e);
     }
   }
 }

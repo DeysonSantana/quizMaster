@@ -6,14 +6,19 @@ import { generateQRCodeCanvas } from './qrcodeEngine.js';
 /**
  * Compacta a estrutura de dados do quiz para reduzir tamanho do payload
  */
+/**
+ * Compacta a estrutura de dados do quiz para reduzir tamanho do payload
+ */
 function minifyQuizPayload(quizData) {
+  const diffMap = { 'Fácil': 0, 'Médio': 1, 'Difícil': 2 };
+
   return {
     t: quizData.title || 'Quiz Personalizado',
     u: quizData.author || 'Criador',
     q: (quizData.questions || []).map(item => [
       item.question || '',
       item.category || 'Geral',
-      item.difficulty || 'Fácil',
+      typeof item.difficulty === 'number' ? item.difficulty : (diffMap[item.difficulty] !== undefined ? diffMap[item.difficulty] : 0),
       item.options || ['', '', '', ''],
       typeof item.correctAnswer === 'number' ? item.correctAnswer : 0,
       item.curiosity || ''
@@ -25,22 +30,25 @@ function minifyQuizPayload(quizData) {
  * Restaura a estrutura completa do quiz a partir da versão compactada
  */
 function unminifyQuizPayload(minified) {
-  // Se já estiver no formato completo
   if (minified.questions && Array.isArray(minified.questions)) {
     return minified;
   }
 
+  const diffReverseMap = { 0: 'Fácil', 1: 'Médio', 2: 'Difícil' };
   const title = minified.t || minified.title || 'Quiz Personalizado';
   const author = minified.u || minified.author || 'Criador';
   const rawQuestions = minified.q || minified.questions || [];
 
   const questions = rawQuestions.map((item, idx) => {
     if (Array.isArray(item)) {
+      const diffVal = item[2];
+      const diffStr = typeof diffVal === 'number' ? (diffReverseMap[diffVal] || 'Fácil') : (diffVal || 'Fácil');
+
       return {
         id: idx + 1,
         question: item[0] || '',
         category: item[1] || 'Geral',
-        difficulty: item[2] || 'Fácil',
+        difficulty: diffStr,
         options: Array.isArray(item[3]) ? item[3] : ['', '', '', ''],
         correctAnswer: typeof item[4] === 'number' ? item[4] : 0,
         curiosity: item[5] || 'Resposta correta registrada!'
@@ -149,26 +157,25 @@ export function renderQRCode(containerElement, url) {
   containerElement.innerHTML = '';
 
   try {
-    // Utiliza o motor local de alta capacidade
-    const canvas = generateQRCodeCanvas(url, 180);
-    containerElement.appendChild(canvas);
+    // Se o link for curto ou compatível com QR Code Type 1-40
+    if (url.length <= 2200) {
+      const canvas = generateQRCodeCanvas(url, 180);
+      containerElement.appendChild(canvas);
+      return;
+    }
   } catch (err) {
-    console.warn('Motor local de QR Code gerou aviso, tentando fallback:', err);
-    // Fallback externo caso necessário
-    const img = document.createElement('img');
-    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
-    img.alt = 'QR Code do Quiz';
-    img.className = 'w-[180px] h-[180px] rounded-lg shadow-sm mx-auto bg-white p-1';
-    img.onerror = () => {
-      containerElement.innerHTML = `
-        <div class="w-[180px] h-[180px] flex flex-col items-center justify-center bg-gray-100 rounded-lg text-gray-700 p-2 text-center text-xs font-medium">
-          <span>🔗 Link gerado com sucesso!</span>
-          <span class="text-[10px] text-gray-500 mt-1">Utilize o botão "Copiar" abaixo.</span>
-        </div>
-      `;
-    };
-    containerElement.appendChild(img);
+    console.info('Link longo para QR Code denso, utilizando cartão de link direto.');
   }
+
+  // Renderiza cartão informativo de Link Direto portátil
+  containerElement.innerHTML = `
+    <div class="w-full h-full flex flex-col items-center justify-center bg-gray-900/90 border border-indigo-500/30 rounded-xl text-indigo-200 p-3 text-center">
+      <i data-lucide="link" class="w-8 h-8 text-indigo-400 mb-1.5"></i>
+      <span class="text-xs font-bold text-white">Link Portátil Gerado</span>
+      <span class="text-[10px] text-gray-400 mt-1">Utilize o botão "Copiar Link" abaixo para enviar aos jogadores.</span>
+    </div>
+  `;
+  if (window.lucide) window.lucide.createIcons();
 }
 
 /**
