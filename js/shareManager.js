@@ -202,9 +202,12 @@ export async function copyToClipboard(text) {
     textArea.select();
     const successful = document.execCommand('copy');
     document.body.removeChild(textArea);
-    return successful;
   } catch (err) {
     console.error('Falha ao copiar texto:', err);
+    return false;
+  }
+}
+
 /**
  * Encurta URLs longas usando provedores públicos gratuitos (TinyURL / is.gd)
  */

@@ -78,7 +78,22 @@ class QuizApp {
       quizSourceLabel: document.getElementById('quiz-source-label'),
       resetDefaultQuizBtn: document.getElementById('reset-default-quiz-btn'),
       shareCSVQuizBtn: document.getElementById('share-csv-quiz-btn'),
-      uploadFeedback: document.getElementById('upload-feedback')
+      uploadFeedback: document.getElementById('upload-feedback'),
+
+      // Mobile Aside Drawer Controls
+      mobileMenuToggleBtn: document.getElementById('mobile-menu-toggle-btn'),
+      closeMobileDrawerBtn: document.getElementById('close-mobile-drawer-btn'),
+      mobileDrawerContainer: document.getElementById('mobile-drawer-container'),
+      mobileDrawerBackdrop: document.getElementById('mobile-drawer-backdrop'),
+      mobileDrawerPanel: document.getElementById('mobile-drawer-panel'),
+      mobileQuickCreateBtn: document.getElementById('mobile-quick-create-btn'),
+      drawerAiBtn: document.getElementById('drawer-ai-btn'),
+      drawerBuilderBtn: document.getElementById('drawer-builder-btn'),
+      drawerMyQuizzesBtn: document.getElementById('drawer-my-quizzes-btn'),
+      drawerRoomsBtn: document.getElementById('drawer-rooms-btn'),
+      drawerShareBtn: document.getElementById('drawer-share-btn'),
+      drawerAuthBtn: document.getElementById('drawer-auth-btn'),
+      drawerSoundBtn: document.getElementById('drawer-sound-btn')
     };
 
     this.init();
@@ -91,6 +106,7 @@ class QuizApp {
     this.leaderboardManager = new LeaderboardManager(this);
 
     this.bindEvents();
+    this.bindMobileDrawerEvents();
     this.bindCSVUploadEvents();
     this.checkSharedUrlQuiz();
     this.updateAudioState();
@@ -193,6 +209,115 @@ class QuizApp {
         this.dom.startBtn.click();
       }
     });
+  }
+
+  bindMobileDrawerEvents() {
+    // Abrir Drawer
+    if (this.dom.mobileMenuToggleBtn) {
+      this.dom.mobileMenuToggleBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.openMobileDrawer();
+      });
+    }
+
+    // Fechar Drawer (botão X ou backdrop)
+    if (this.dom.closeMobileDrawerBtn) {
+      this.dom.closeMobileDrawerBtn.addEventListener('click', () => this.closeMobileDrawer());
+    }
+    if (this.dom.mobileDrawerBackdrop) {
+      this.dom.mobileDrawerBackdrop.addEventListener('click', () => this.closeMobileDrawer());
+    }
+
+    // Botão Criar Rápido no topo mobile
+    if (this.dom.mobileQuickCreateBtn) {
+      this.dom.mobileQuickCreateBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        if (this.quizBuilder) this.quizBuilder.openBuilder();
+      });
+    }
+
+    // Itens de Ação do Drawer
+    if (this.dom.drawerAiBtn) {
+      this.dom.drawerAiBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeMobileDrawer();
+        if (this.quizBuilder && this.quizBuilder.aiModal) {
+          this.quizBuilder.aiModal.openModal();
+        }
+      });
+    }
+
+    if (this.dom.drawerBuilderBtn) {
+      this.dom.drawerBuilderBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeMobileDrawer();
+        if (this.quizBuilder) {
+          this.quizBuilder.openBuilder();
+        }
+      });
+    }
+
+    if (this.dom.drawerMyQuizzesBtn) {
+      this.dom.drawerMyQuizzesBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeMobileDrawer();
+        if (this.quizBuilder) {
+          this.quizBuilder.openMyQuizzes();
+        }
+      });
+    }
+
+    if (this.dom.drawerRoomsBtn) {
+      this.dom.drawerRoomsBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeMobileDrawer();
+        if (this.roomManager) {
+          this.roomManager.openMyRooms();
+        }
+      });
+    }
+
+    if (this.dom.drawerShareBtn) {
+      this.dom.drawerShareBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeMobileDrawer();
+        if (this.quizBuilder) {
+          this.quizBuilder.shareCurrentActiveQuiz();
+        }
+      });
+    }
+
+    if (this.dom.drawerAuthBtn) {
+      this.dom.drawerAuthBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeMobileDrawer();
+        if (this.authManager) {
+          this.authManager.openAuthModal();
+        }
+      });
+    }
+
+    if (this.dom.drawerSoundBtn) {
+      this.dom.drawerSoundBtn.addEventListener('click', () => {
+        this.soundEnabled = !this.soundEnabled;
+        this.updateAudioState();
+      });
+    }
+  }
+
+  openMobileDrawer() {
+    if (this.dom.mobileDrawerContainer) this.dom.mobileDrawerContainer.classList.remove('pointer-events-none');
+    if (this.dom.mobileDrawerBackdrop) this.dom.mobileDrawerBackdrop.classList.add('active');
+    if (this.dom.mobileDrawerPanel) this.dom.mobileDrawerPanel.classList.add('active');
+    document.body.classList.add('overflow-hidden');
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  closeMobileDrawer() {
+    if (this.dom.mobileDrawerBackdrop) this.dom.mobileDrawerBackdrop.classList.remove('active');
+    if (this.dom.mobileDrawerPanel) this.dom.mobileDrawerPanel.classList.remove('active');
+    if (this.dom.mobileDrawerContainer) this.dom.mobileDrawerContainer.classList.add('pointer-events-none');
+    document.body.classList.remove('overflow-hidden');
   }
 
   bindCSVUploadEvents() {
@@ -364,8 +489,14 @@ class QuizApp {
       this.dom.soundToggleBtn.innerHTML = this.soundEnabled
         ? `<i data-lucide="volume-2" class="w-5 h-5 text-indigo-400"></i>`
         : `<i data-lucide="volume-x" class="w-5 h-5 text-gray-500"></i>`;
-      if (window.lucide) window.lucide.createIcons();
     }
+    if (this.dom.drawerSoundBtn) {
+      this.dom.drawerSoundBtn.textContent = this.soundEnabled ? 'Ligado' : 'Mudo';
+      this.dom.drawerSoundBtn.className = this.soundEnabled
+        ? 'px-2.5 py-1 rounded-lg bg-indigo-600/30 text-indigo-300 text-xs font-bold hover:bg-indigo-600 hover:text-white transition-colors'
+        : 'px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 text-xs font-bold hover:bg-gray-700 transition-colors';
+    }
+    if (window.lucide) window.lucide.createIcons();
   }
 
   showScreen(name) {
@@ -754,7 +885,14 @@ class QuizApp {
   }
 }
 
-// Inicializa o app ao carregar o DOM
-document.addEventListener('DOMContentLoaded', () => {
+// Inicialização segura do app e ícones
+function bootstrap() {
   new QuizApp();
-});
+  if (window.lucide) window.lucide.createIcons();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrap);
+} else {
+  bootstrap();
+}

@@ -434,6 +434,10 @@ export class AuthManager {
   }
 
   updateUI() {
+    const drawerUserName = document.getElementById('drawer-user-name');
+    const drawerUserStatus = document.getElementById('drawer-user-status');
+    const drawerAuthBtn = document.getElementById('drawer-auth-btn');
+
     if (this.currentUser) {
       if (this.dom.authBtn) this.dom.authBtn.classList.add('hidden');
       if (this.dom.userProfileBtn) {
@@ -445,9 +449,29 @@ export class AuthManager {
           this.dom.userDisplayName.textContent = this.currentUser.name;
         }
       }
+
+      if (drawerUserName) drawerUserName.textContent = this.currentUser.name || 'Usuário';
+      if (drawerUserStatus) drawerUserStatus.textContent = this.currentUser.email || 'Conectado';
+      if (drawerAuthBtn) {
+        drawerAuthBtn.textContent = 'Perfil';
+        drawerAuthBtn.onclick = () => {
+          if (this.app) this.app.closeMobileDrawer();
+          this.openProfileModal();
+        };
+      }
     } else {
       if (this.dom.authBtn) this.dom.authBtn.classList.remove('hidden');
       if (this.dom.userProfileBtn) this.dom.userProfileBtn.classList.add('hidden');
+
+      if (drawerUserName) drawerUserName.textContent = 'Minha Conta';
+      if (drawerUserStatus) drawerUserStatus.textContent = 'Banco Local (GitHub Pages)';
+      if (drawerAuthBtn) {
+        drawerAuthBtn.textContent = 'Entrar';
+        drawerAuthBtn.onclick = () => {
+          if (this.app) this.app.closeMobileDrawer();
+          this.openAuthModal();
+        };
+      }
     }
     if (window.lucide) window.lucide.createIcons();
   }

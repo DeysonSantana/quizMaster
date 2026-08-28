@@ -51,62 +51,201 @@
 <body class="bg-mesh text-gray-100 flex flex-col min-h-screen">
 
   <!-- Header / Navigation Bar -->
-  <header class="w-full border-b border-gray-800/80 bg-gray-950/80 backdrop-blur-md sticky top-0 z-50">
-    <div class="max-w-4xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
-          <i data-lucide="brain-circuit" class="w-4 h-4 sm:w-6 sm:h-6 text-white"></i>
+  <header class="w-full border-b border-gray-800/80 bg-gray-950/90 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-3">
+      
+      <!-- Brand Logo & Title (Nunca quebra ou trunca) -->
+      <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
+          <i data-lucide="brain" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
         </div>
-        <div class="truncate">
-          <h1 class="font-display font-bold text-base sm:text-lg tracking-tight text-white leading-none">QuizMaster</h1>
-          <span class="text-[10px] sm:text-[11px] text-gray-400 font-medium hidden xs:inline">Conhecimentos Gerais &amp; Personalizado</span>
+        <div class="flex flex-col justify-center">
+          <span class="font-display font-extrabold text-base sm:text-xl tracking-tight text-white leading-tight">QuizMaster</span>
+          <span class="text-[10px] sm:text-[11px] text-indigo-300/80 font-medium hidden md:inline leading-none">Conhecimentos Gerais &amp; Salas</span>
         </div>
       </div>
 
-      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-        <button id="open-ai-modal-btn" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-xs font-bold text-white shadow-md shadow-purple-600/30 flex items-center gap-1.5 transition-all">
-          <i data-lucide="bot" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
-          <span class="hidden sm:inline">Gerar com </span><span>I.A</span>
+      <!-- Action Navigation Menu (Desktop e Mobile) -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        
+        <!-- Botões Visíveis no Desktop / Tablet (md+) -->
+        <div class="hidden md:flex items-center gap-1.5 sm:gap-2">
+          <!-- Gerar com IA -->
+          <button id="open-ai-modal-btn" class="px-2.5 sm:px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-xs font-bold text-white shadow-md shadow-purple-600/30 flex items-center gap-1.5 transition-all" title="Gerador com I.A">
+            <i data-lucide="bot" class="w-4 h-4 text-purple-200"></i>
+            <span class="hidden lg:inline">Criar com </span><span>I.A</span>
+          </button>
+
+          <!-- Meus Quizzes -->
+          <button id="open-my-quizzes-btn" class="p-2 sm:px-3 sm:py-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-700/80 text-xs font-semibold text-gray-200 flex items-center gap-1.5 transition-colors" title="Meus Quizzes Salvos">
+            <i data-lucide="folder-kanban" class="w-4 h-4 text-amber-400"></i>
+            <span class="hidden xl:inline">Meus Quizzes</span>
+          </button>
+
+          <!-- Salas & Rankings -->
+          <button id="open-rooms-list-btn" class="p-2 sm:px-3 sm:py-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-700/80 text-xs font-semibold text-amber-300 flex items-center gap-1.5 transition-colors" title="Salas de Desafio e Rankings">
+            <i data-lucide="trophy" class="w-4 h-4 text-amber-400"></i>
+            <span class="hidden xl:inline">Salas &amp; Rankings</span>
+          </button>
+
+          <!-- Compartilhar -->
+          <button id="header-share-btn" class="p-2 sm:px-3 sm:py-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-700/80 text-xs font-semibold text-indigo-300 flex items-center gap-1.5 transition-colors" title="Compartilhar Quiz Atual">
+            <i data-lucide="share-2" class="w-4 h-4 text-indigo-400"></i>
+          </button>
+
+          <!-- Criar Quiz (Principal) -->
+          <button id="open-builder-btn" class="px-2.5 sm:px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/30 flex items-center gap-1.5 transition-all">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Criar Quiz</span>
+          </button>
+
+          <!-- Botão de Login / Perfil -->
+          <button id="header-auth-btn" class="px-2.5 sm:px-3 py-2 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-700/80 text-xs font-semibold text-gray-200 flex items-center gap-1.5 transition-colors" title="Entrar / Criar Conta">
+            <i data-lucide="user" class="w-4 h-4 text-indigo-400"></i>
+            <span>Entrar</span>
+          </button>
+
+          <button id="header-user-profile-btn" class="hidden px-2.5 sm:px-3 py-2 rounded-xl bg-indigo-600/25 hover:bg-indigo-600/40 border border-indigo-500/40 text-xs font-semibold text-indigo-200 flex items-center gap-1.5 transition-colors" title="Meu Perfil">
+            <span id="header-user-avatar-text" class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">U</span>
+            <span id="header-user-name" class="max-w-[80px] truncate">Usuário</span>
+          </button>
+        </div>
+
+        <!-- Botão Ação Rápida Mobile: Criar Quiz -->
+        <button id="mobile-quick-create-btn" class="md:hidden px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/30 flex items-center gap-1 transition-all">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span>Criar</span>
         </button>
 
-        <button id="open-my-quizzes-btn" class="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-semibold text-gray-200 flex items-center gap-1.5 transition-colors" title="Meus Quizzes Salvos">
-          <i data-lucide="folder-kanban" class="w-4 h-4 text-amber-400"></i>
-          <span class="hidden md:inline">Meus Quizzes</span>
-        </button>
-
-        <button id="open-rooms-list-btn" class="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-semibold text-amber-300 flex items-center gap-1.5 transition-colors" title="Salas de Desafio e Rankings">
-          <i data-lucide="trophy" class="w-4 h-4 text-amber-400"></i>
-          <span class="hidden md:inline">Salas &amp; Rankings</span>
-        </button>
-
-        <button id="header-share-btn" class="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-semibold text-indigo-300 flex items-center gap-1.5 transition-colors" title="Compartilhar este Quiz">
-          <i data-lucide="share-2" class="w-4 h-4 text-indigo-400"></i>
-          <span class="hidden md:inline">Compartilhar</span>
-        </button>
-
-        <button id="open-builder-btn" class="px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/30 flex items-center gap-1.5 transition-all">
-          <i data-lucide="plus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
-          <span class="hidden sm:inline">Criar Quiz</span>
-          <span class="sm:hidden">Criar</span>
-        </button>
-
-        <!-- Botão de Login / Perfil -->
-        <button id="header-auth-btn" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-semibold text-gray-200 flex items-center gap-1.5 transition-colors" title="Entrar / Criar Conta">
-          <i data-lucide="user" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400"></i>
-          <span class="hidden sm:inline">Entrar</span>
-        </button>
-
-        <button id="header-user-profile-btn" class="hidden px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-xs font-semibold text-indigo-200 flex items-center gap-1.5 transition-colors" title="Meu Perfil">
-          <span id="header-user-avatar-text" class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">U</span>
-          <span id="header-user-name" class="hidden sm:inline max-w-[80px] truncate">Usuário</span>
-        </button>
-
-        <button id="sound-toggle-btn" class="p-1.5 sm:p-2 rounded-xl bg-gray-800/80 border border-gray-700/60 hover:bg-gray-700/60 transition-colors" title="Alternar Som">
+        <!-- Alternar Som (Sempre Visível) -->
+        <button id="sound-toggle-btn" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-900/80 border border-gray-700/80 hover:bg-gray-800 flex items-center justify-center transition-colors shrink-0" title="Alternar Efeitos Sonoros">
           <i data-lucide="volume-2" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400"></i>
+        </button>
+
+        <!-- Botão Hamburger do Menu Lateral Mobile (Visível < md) -->
+        <button id="mobile-menu-toggle-btn" class="md:hidden w-9 h-9 rounded-xl bg-gray-900/80 border border-gray-700/80 hover:bg-gray-800 flex items-center justify-center text-gray-200 transition-colors shrink-0" title="Abrir Menu Lateral">
+          <i data-lucide="menu" class="w-5 h-5 text-indigo-300"></i>
         </button>
       </div>
     </div>
   </header>
+
+  <!-- PAINEL LATERAL MOBILE (ASIDE DRAWER) -->
+  <div id="mobile-drawer-container" class="fixed inset-0 z-50 pointer-events-none">
+    <!-- Backdrop Overlay -->
+    <div id="mobile-drawer-backdrop" class="drawer-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm"></div>
+
+    <!-- Aside Panel Lateral -->
+    <aside id="mobile-drawer-panel" class="drawer-panel fixed top-0 right-0 bottom-0 w-[290px] xs:w-[320px] sm:w-[360px] bg-gray-950/95 border-l border-gray-800/90 p-5 flex flex-col justify-between overflow-y-auto shadow-2xl pointer-events-auto">
+      
+      <!-- Topo do Drawer -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-md text-white">
+              <i data-lucide="brain" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-display font-extrabold text-base text-white leading-tight">QuizMaster</h3>
+              <span class="text-[10px] text-gray-400 font-medium">Menu &amp; Navegação</span>
+            </div>
+          </div>
+          <button id="close-mobile-drawer-btn" class="p-1.5 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Card de Usuário / Perfil no Drawer -->
+        <div id="drawer-auth-card" class="p-3 rounded-2xl bg-gray-900/80 border border-gray-800 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-9 h-9 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0">
+              <i data-lucide="user" class="w-4 h-4"></i>
+            </div>
+            <div class="min-w-0">
+              <h4 id="drawer-user-name" class="font-bold text-xs text-white truncate">Minha Conta</h4>
+              <p id="drawer-user-status" class="text-[10px] text-gray-400">Banco Local (GitHub Pages)</p>
+            </div>
+          </div>
+          <button id="drawer-auth-btn" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-colors shrink-0">
+            Entrar
+          </button>
+        </div>
+
+        <!-- Links de Navegação do Painel Lateral -->
+        <nav class="space-y-2 pt-1">
+          <!-- 1. Gerar com IA -->
+          <button id="drawer-ai-btn" class="w-full p-3 rounded-2xl bg-gradient-to-r from-purple-950/60 to-indigo-950/60 hover:from-purple-900/60 hover:to-indigo-900/60 border border-purple-500/30 text-left flex items-center gap-3 transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-purple-600/30 text-purple-300 group-hover:scale-105 flex items-center justify-center shrink-0 transition-transform">
+              <i data-lucide="bot" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <h4 class="font-bold text-xs sm:text-sm text-white">Criar com I.A</h4>
+              <p class="text-[10px] sm:text-[11px] text-purple-300/80">Gerador automático via Gemini AI</p>
+            </div>
+          </button>
+
+          <!-- 2. Criar Novo Quiz -->
+          <button id="drawer-builder-btn" class="w-full p-3 rounded-2xl bg-gray-900/70 hover:bg-gray-800 border border-gray-800 text-left flex items-center gap-3 transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600/30 text-indigo-400 group-hover:scale-105 flex items-center justify-center shrink-0 transition-transform">
+              <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <h4 class="font-bold text-xs sm:text-sm text-white">Criar Novo Quiz</h4>
+              <p class="text-[10px] sm:text-[11px] text-gray-400">Criador visual ou importação CSV</p>
+            </div>
+          </button>
+
+          <!-- 3. Meus Quizzes Salvos -->
+          <button id="drawer-my-quizzes-btn" class="w-full p-3 rounded-2xl bg-gray-900/70 hover:bg-gray-800 border border-gray-800 text-left flex items-center gap-3 transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 group-hover:scale-105 flex items-center justify-center shrink-0 transition-transform">
+              <i data-lucide="folder-kanban" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <h4 class="font-bold text-xs sm:text-sm text-white">Meus Quizzes Salvos</h4>
+              <p class="text-[10px] sm:text-[11px] text-gray-400">Quizzes salvos neste navegador</p>
+            </div>
+          </button>
+
+          <!-- 4. Salas de Desafio & Rankings -->
+          <button id="drawer-rooms-btn" class="w-full p-3 rounded-2xl bg-gray-900/70 hover:bg-gray-800 border border-gray-800 text-left flex items-center gap-3 transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 group-hover:scale-105 flex items-center justify-center shrink-0 transition-transform">
+              <i data-lucide="trophy" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <h4 class="font-bold text-xs sm:text-sm text-white">Salas &amp; Rankings</h4>
+              <p class="text-[10px] sm:text-[11px] text-gray-400">Pódios ao vivo, PINs e colocações</p>
+            </div>
+          </button>
+
+          <!-- 5. Compartilhar Quiz Ativo -->
+          <button id="drawer-share-btn" class="w-full p-3 rounded-2xl bg-gray-900/70 hover:bg-gray-800 border border-gray-800 text-left flex items-center gap-3 transition-all group">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 group-hover:scale-105 flex items-center justify-center shrink-0 transition-transform">
+              <i data-lucide="share-2" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <h4 class="font-bold text-xs sm:text-sm text-white">Compartilhar Quiz</h4>
+              <p class="text-[10px] sm:text-[11px] text-gray-400">Link portátil, encurtador e QR Code</p>
+            </div>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Rodapé do Drawer -->
+      <div class="pt-4 border-t border-gray-800 space-y-3">
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-gray-900/60 border border-gray-800">
+          <div class="flex items-center gap-2">
+            <i data-lucide="volume-2" class="w-4 h-4 text-indigo-400"></i>
+            <span class="text-xs text-gray-300 font-medium">Efeitos Sonoros</span>
+          </div>
+          <button id="drawer-sound-btn" class="px-2.5 py-1 rounded-lg bg-indigo-600/30 text-indigo-300 text-xs font-bold hover:bg-indigo-600 hover:text-white transition-colors">
+            Ligado
+          </button>
+        </div>
+        <p class="text-[10px] text-gray-500 text-center font-mono">QuizMaster v2.0 • GitHub Pages</p>
+      </div>
+
+    </aside>
+  </div>
 
   <!-- Main Content Area -->
   <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
@@ -177,7 +316,7 @@
             <input type="file" id="csv-file-input" accept=".csv" class="hidden" />
             <div class="flex flex-col items-center gap-1.5 sm:gap-2 pointer-events-none">
               <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-indigo-500/10 text-indigo-400 group-hover:scale-110 flex items-center justify-center transition-transform">
-                <i data-lucide="upload-cloud" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                <i data-lucide="cloud-upload" class="w-4 h-4 sm:w-5 sm:h-5"></i>
               </div>
               <p class="text-xs text-gray-300 font-medium">
                 Arraste seu arquivo <strong class="text-indigo-400">.CSV</strong> aqui ou <span class="text-indigo-400 underline underline-offset-2">clique para selecionar</span>
