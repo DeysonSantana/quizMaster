@@ -58,6 +58,7 @@ class QuizApp {
       performanceBadge: document.getElementById('performance-badge'),
       categoryStatsContainer: document.getElementById('category-stats-container'),
       reviewListContainer: document.getElementById('review-list-container'),
+      reviewHeadingText: document.getElementById('review-heading-text'),
       
       // Controls & Buttons
       startBtn: document.getElementById('start-btn'),
@@ -86,6 +87,11 @@ class QuizApp {
     this.bindCSVUploadEvents();
     this.checkSharedUrlQuiz();
     this.updateAudioState();
+
+    window.addEventListener('hashchange', () => {
+      this.checkSharedUrlQuiz();
+    });
+
     if (window.lucide) {
       window.lucide.createIcons();
     }
@@ -653,6 +659,10 @@ class QuizApp {
     this.dom.performanceBadge.textContent = badgeText;
     this.dom.performanceBadge.className = `inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold border ${badgeClass}`;
 
+    if (this.dom.reviewHeadingText) {
+      this.dom.reviewHeadingText.textContent = `Revisão e Curiosidades (${totalQuestions} ${totalQuestions === 1 ? 'Pergunta' : 'Perguntas'})`;
+    }
+
     // Estatísticas por Categoria (Extraídas dinamicamente)
     this.renderCategoryStats();
 
@@ -727,6 +737,8 @@ class QuizApp {
       `;
       this.dom.reviewListContainer.appendChild(item);
     });
+
+    if (window.lucide) window.lucide.createIcons();
   }
 }
 

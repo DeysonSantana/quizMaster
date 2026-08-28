@@ -10,7 +10,9 @@ body {
   background-color: #0b0f19;
   color: #f3f4f6;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .font-display {
@@ -28,7 +30,7 @@ body {
 
 /* Glass Card */
 .glass-card {
-  background: rgba(17, 24, 39, 0.75);
+  background: rgba(17, 24, 39, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -46,6 +48,8 @@ body {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  min-height: 52px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .quiz-option:hover:not(:disabled) {
@@ -56,7 +60,7 @@ body {
 }
 
 .quiz-option:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.99);
 }
 
 .quiz-option.correct {
@@ -123,21 +127,45 @@ body {
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Mobile-First Responsiveness & Touch Adjustments */
+@media (max-width: 640px) {
+  /* Evita auto-zoom do Safari no iOS */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Modais ocupam tela cheia com bordas arredondadas confortáveis */
+  .glass-card {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Rolagem por toque suave */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ajuste de padding de botões e touch targets */
+  button, .quiz-option {
+    touch-action: manipulation;
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b0f19;
+  background: rgba(11, 15, 25, 0.5);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1f293d;
+  background: #27354f;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #3e5073;
 }

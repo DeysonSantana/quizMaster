@@ -49,36 +49,42 @@
 <body class="bg-mesh text-gray-100 flex flex-col min-h-screen">
 
   <!-- Header / Navigation Bar -->
-  <header class="w-full border-b border-gray-800/80 bg-gray-950/60 backdrop-blur-md sticky top-0 z-50">
-    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-          <i data-lucide="brain-circuit" class="w-6 h-6 text-white"></i>
+  <header class="w-full border-b border-gray-800/80 bg-gray-950/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-4xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
+          <i data-lucide="brain-circuit" class="w-4 h-4 sm:w-6 sm:h-6 text-white"></i>
         </div>
-        <div>
-          <h1 class="font-display font-bold text-lg tracking-tight text-white leading-none">QuizMaster</h1>
-          <span class="text-[11px] text-gray-400 font-medium">Edição Conhecimentos Gerais &amp; Personalizado</span>
+        <div class="truncate">
+          <h1 class="font-display font-bold text-base sm:text-lg tracking-tight text-white leading-none">QuizMaster</h1>
+          <span class="text-[10px] sm:text-[11px] text-gray-400 font-medium hidden xs:inline">Conhecimentos Gerais &amp; Personalizado</span>
         </div>
       </div>
 
-      <div class="flex items-center gap-2 sm:gap-3">
-        <button id="open-my-quizzes-btn" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-semibold text-gray-200 flex items-center gap-1.5 transition-colors">
+      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <button id="open-ai-modal-btn" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-xs font-bold text-white shadow-md shadow-purple-600/30 flex items-center gap-1.5 transition-all">
+          <i data-lucide="bot" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+          <span class="hidden sm:inline">Gerar com </span><span>I.A</span>
+        </button>
+
+        <button id="open-my-quizzes-btn" class="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-semibold text-gray-200 flex items-center gap-1.5 transition-colors" title="Meus Quizzes Salvos">
           <i data-lucide="folder-kanban" class="w-4 h-4 text-amber-400"></i>
-          <span class="hidden sm:inline">Meus Quizzes</span>
+          <span class="hidden md:inline">Meus Quizzes</span>
         </button>
 
-        <button id="header-share-btn" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-semibold text-indigo-300 flex items-center gap-1.5 transition-colors" title="Compartilhar este Quiz">
+        <button id="header-share-btn" class="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 text-xs font-semibold text-indigo-300 flex items-center gap-1.5 transition-colors" title="Compartilhar este Quiz">
           <i data-lucide="share-2" class="w-4 h-4 text-indigo-400"></i>
-          <span class="hidden sm:inline">Compartilhar</span>
+          <span class="hidden md:inline">Compartilhar</span>
         </button>
 
-        <button id="open-builder-btn" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/30 flex items-center gap-1.5 transition-all">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i>
-          <span>Criar Quiz</span>
+        <button id="open-builder-btn" class="px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/30 flex items-center gap-1.5 transition-all">
+          <i data-lucide="plus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+          <span class="hidden sm:inline">Criar Quiz</span>
+          <span class="sm:hidden">Criar</span>
         </button>
 
-        <button id="sound-toggle-btn" class="p-2 rounded-xl bg-gray-800/80 border border-gray-700/60 hover:bg-gray-700/60 transition-colors" title="Alternar Som">
-          <i data-lucide="volume-2" class="w-5 h-5 text-indigo-400"></i>
+        <button id="sound-toggle-btn" class="p-1.5 sm:p-2 rounded-xl bg-gray-800/80 border border-gray-700/60 hover:bg-gray-700/60 transition-colors" title="Alternar Som">
+          <i data-lucide="volume-2" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400"></i>
         </button>
       </div>
     </div>
@@ -88,87 +94,87 @@
   <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
 
     <!-- 1. TELA INICIAL (WELCOME SCREEN) -->
-    <section id="welcome-screen" class="glass-card rounded-3xl p-6 sm:p-10 text-center relative overflow-hidden animate-slide-up">
+    <section id="welcome-screen" class="glass-card rounded-3xl p-5 sm:p-8 md:p-10 text-center relative overflow-hidden animate-slide-up">
       <!-- Glow background decoration -->
       <div class="absolute -top-24 -left-24 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-24 -right-24 w-64 h-64 bg-pink-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div class="relative z-10 max-w-2xl mx-auto space-y-6">
-        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
-          <i data-lucide="sparkles" class="w-4 h-4"></i> Desafio de 25 Perguntas
+      <div class="relative z-10 max-w-2xl mx-auto space-y-5 sm:space-y-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i> Desafio de 25 Perguntas
         </div>
 
-        <h2 class="text-3xl sm:text-5xl font-display font-extrabold tracking-tight text-white leading-tight">
+        <h2 class="text-2xl sm:text-4xl md:text-5xl font-display font-extrabold tracking-tight text-white leading-tight">
           Teste seus conhecimentos e aprenda com o <span class="bg-gradient-to-r from-indigo-400 via-pink-400 to-amber-300 bg-clip-text text-transparent">QuizMaster</span>
         </h2>
 
-        <p class="text-gray-300 text-sm sm:text-base leading-relaxed">
+        <p class="text-gray-300 text-xs sm:text-sm md:text-base leading-relaxed">
           Uma jornada interativa e gamificada com 25 perguntas cuidadosamente elaboradas através de 5 temas essenciais:
           <span class="text-indigo-300 font-medium">História</span>, 
           <span class="text-emerald-300 font-medium">Geografia</span>, 
-          <span class="text-sky-300 font-medium">Ciência & Tecnologia</span>, 
-          <span class="text-pink-300 font-medium">Arte & Cultura Pop</span> e 
+          <span class="text-sky-300 font-medium">Ciência &amp; Tecnologia</span>, 
+          <span class="text-pink-300 font-medium">Arte &amp; Cultura</span> e 
           <span class="text-amber-300 font-medium">Esportes</span>.
         </p>
 
         <!-- Grid de Características -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2 text-left">
-          <div class="p-4 rounded-2xl bg-gray-800/40 border border-gray-700/50 flex flex-col gap-1.5">
-            <div class="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-              <i data-lucide="trending-up" class="w-4 h-4"></i> Dificuldade Progressiva
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3.5 pt-1 text-left">
+          <div class="p-3.5 sm:p-4 rounded-2xl bg-gray-800/40 border border-gray-700/50 flex flex-col gap-1">
+            <div class="flex items-center gap-1.5 text-emerald-400 font-bold text-xs sm:text-sm">
+              <i data-lucide="trending-up" class="w-4 h-4 shrink-0"></i> Dificuldade Progressiva
             </div>
-            <p class="text-xs text-gray-400">Comece no nível fácil, avance para o médio e chegue ao nível expert.</p>
+            <p class="text-[11px] sm:text-xs text-gray-400 leading-normal">Comece no nível fácil, avance para o médio e chegue ao nível expert.</p>
           </div>
 
-          <div class="p-4 rounded-2xl bg-gray-800/40 border border-gray-700/50 flex flex-col gap-1.5">
-            <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
-              <i data-lucide="lightbulb" class="w-4 h-4"></i> Fator Didático
+          <div class="p-3.5 sm:p-4 rounded-2xl bg-gray-800/40 border border-gray-700/50 flex flex-col gap-1">
+            <div class="flex items-center gap-1.5 text-amber-400 font-bold text-xs sm:text-sm">
+              <i data-lucide="lightbulb" class="w-4 h-4 shrink-0"></i> Fator Didático
             </div>
-            <p class="text-xs text-gray-400">Pílula de curiosidade em cada pergunta para você sempre aprender algo novo.</p>
+            <p class="text-[11px] sm:text-xs text-gray-400 leading-normal">Pílula de curiosidade em cada pergunta para você sempre aprender algo novo.</p>
           </div>
 
-          <div class="p-4 rounded-2xl bg-gray-800/40 border border-gray-700/50 flex flex-col gap-1.5">
-            <div class="flex items-center gap-2 text-indigo-400 font-bold text-sm">
-              <i data-lucide="flame" class="w-4 h-4"></i> Combos e Pontos
+          <div class="p-3.5 sm:p-4 rounded-2xl bg-gray-800/40 border border-gray-700/50 flex flex-col gap-1">
+            <div class="flex items-center gap-1.5 text-indigo-400 font-bold text-xs sm:text-sm">
+              <i data-lucide="flame" class="w-4 h-4 shrink-0"></i> Combos e Pontos
             </div>
-            <p class="text-xs text-gray-400">Acerte em sequência para multiplicar seus pontos e ativar efeitos sonoros.</p>
+            <p class="text-[11px] sm:text-xs text-gray-400 leading-normal">Acerte em sequência para multiplicar seus pontos e ativar efeitos sonoros.</p>
           </div>
         </div>
 
-        <!-- Seção de Importação CSV / Perguntas Personalizadas -->
-        <div class="p-5 rounded-2xl bg-gray-900/70 border border-gray-700/60 space-y-4 text-left">
-          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-3">
+        <!-- Seção de Importação de Arquivo CSV -->
+        <div class="p-4 sm:p-5 rounded-2xl bg-gray-900/70 border border-gray-700/60 space-y-3 sm:space-y-4 text-left">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-2.5">
             <div class="flex items-center gap-2">
-              <i data-lucide="file-spreadsheet" class="w-5 h-5 text-indigo-400"></i>
-              <span class="font-bold text-sm text-gray-200">Perguntas Personalizadas (Upload CSV)</span>
+              <i data-lucide="file-spreadsheet" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400"></i>
+              <span class="font-bold text-xs sm:text-sm text-gray-200">Perguntas Personalizadas (Upload CSV)</span>
             </div>
-            <button id="download-template-btn" type="button" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors">
+            <button id="download-template-btn" type="button" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
               <span>Baixar Modelo CSV</span>
             </button>
           </div>
 
           <!-- Drag and Drop Area -->
-          <div id="drop-zone" class="border-2 border-dashed border-gray-700 hover:border-indigo-500/80 rounded-xl p-5 text-center cursor-pointer transition-all bg-gray-950/40 hover:bg-indigo-950/20 group">
+          <div id="drop-zone" class="border-2 border-dashed border-gray-700 hover:border-indigo-500/80 rounded-xl p-4 sm:p-5 text-center cursor-pointer transition-all bg-gray-950/40 hover:bg-indigo-950/20 group">
             <input type="file" id="csv-file-input" accept=".csv" class="hidden" />
-            <div class="flex flex-col items-center gap-2 pointer-events-none">
-              <div class="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-400 group-hover:scale-110 flex items-center justify-center transition-transform">
-                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+            <div class="flex flex-col items-center gap-1.5 sm:gap-2 pointer-events-none">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-indigo-500/10 text-indigo-400 group-hover:scale-110 flex items-center justify-center transition-transform">
+                <i data-lucide="upload-cloud" class="w-4 h-4 sm:w-5 sm:h-5"></i>
               </div>
               <p class="text-xs text-gray-300 font-medium">
                 Arraste seu arquivo <strong class="text-indigo-400">.CSV</strong> aqui ou <span class="text-indigo-400 underline underline-offset-2">clique para selecionar</span>
               </p>
-              <p class="text-[11px] text-gray-500">Suporta delimitadores com vírgula (,) e ponto-e-vírgula (;)</p>
+              <p class="text-[10px] sm:text-[11px] text-gray-500">Suporta delimitadores com vírgula (,) e ponto-e-vírgula (;)</p>
             </div>
           </div>
 
           <!-- Status do Arquivo / Conjunto Ativo -->
-          <div id="quiz-source-status" class="flex flex-wrap items-center justify-between gap-3 text-xs bg-gray-800/60 p-3 rounded-xl border border-gray-700/50">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span id="quiz-source-label" class="text-gray-300 font-medium">Perguntas Padrão do QuizMaster (25 questões)</span>
+          <div id="quiz-source-status" class="flex flex-wrap items-center justify-between gap-2.5 text-xs bg-gray-800/60 p-2.5 sm:p-3 rounded-xl border border-gray-700/50">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+              <span id="quiz-source-label" class="text-gray-300 font-medium truncate">Perguntas Padrão do QuizMaster (25 questões)</span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 shrink-0">
               <button id="share-csv-quiz-btn" type="button" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center gap-1.5 transition-colors" title="Gerar link de compartilhamento para este quiz">
                 <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
                 <span>Gerar Link &amp; QR</span>
@@ -185,8 +191,8 @@
         </div>
 
         <!-- Opções Rápidas -->
-        <div class="flex items-center justify-center gap-6 pt-2">
-          <label class="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-gray-300 hover:text-white transition-colors">
+        <div class="flex items-center justify-center gap-6 pt-1">
+          <label class="flex items-center gap-2 cursor-pointer text-xs font-medium text-gray-300 hover:text-white transition-colors">
             <input type="checkbox" id="timer-toggle-checkbox" checked class="w-4 h-4 text-indigo-600 rounded bg-gray-800 border-gray-700 focus:ring-indigo-500 focus:ring-offset-gray-900" />
             <span>Temporizador de 20s por pergunta</span>
           </label>
@@ -194,7 +200,7 @@
 
         <!-- Botão Iniciar -->
         <div class="pt-2">
-          <button id="start-btn" class="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-lg text-white shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center justify-center gap-3">
+          <button id="start-btn" class="w-full sm:w-auto px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-base sm:text-lg text-white shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transform hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center justify-center gap-3">
             <span id="start-btn-text">Iniciar Desafio</span>
             <i data-lucide="arrow-right" class="w-5 h-5"></i>
           </button>
@@ -206,24 +212,24 @@
     <section id="quiz-screen" class="hidden space-y-4 animate-slide-up">
       
       <!-- Barra de Progresso e Top Stats -->
-      <div class="glass-card rounded-2xl p-4 flex flex-col gap-3">
-        <div class="flex items-center justify-between text-xs font-semibold">
+      <div class="glass-card rounded-2xl p-3.5 sm:p-4 flex flex-col gap-2.5 sm:gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold">
           <div class="flex items-center gap-2">
-            <span id="progress-text" class="text-indigo-300">Pergunta 1 de 25</span>
+            <span id="progress-text" class="text-indigo-300 font-bold">Pergunta 1 de 25</span>
           </div>
 
-          <div class="flex items-center gap-3">
-            <div id="streak-badge" class="hidden px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-extrabold flex items-center gap-1">
-              <i data-lucide="flame" class="w-3.5 h-3.5 fill-amber-400"></i>
+          <div class="flex items-center gap-2 sm:gap-3">
+            <div id="streak-badge" class="hidden px-2 sm:px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[11px] sm:text-xs font-extrabold flex items-center gap-1">
+              <i data-lucide="flame" class="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400"></i>
               <span id="streak-count">2x Combo</span>
             </div>
 
-            <div id="timer-container" class="px-3 py-1 rounded-full bg-gray-800/80 border border-gray-700/60 flex items-center gap-1.5">
+            <div id="timer-container" class="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-gray-800/80 border border-gray-700/60 flex items-center gap-1">
               <i data-lucide="timer" class="w-3.5 h-3.5 text-indigo-400"></i>
               <span id="timer-display" class="font-mono font-bold text-indigo-300">20s</span>
             </div>
 
-            <div class="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-bold">
+            <div class="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-bold">
               <span id="score-badge">0 pts</span>
             </div>
           </div>
@@ -235,7 +241,7 @@
       </div>
 
       <!-- Card Principal da Pergunta -->
-      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 relative overflow-hidden">
+      <div class="glass-card rounded-3xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 relative overflow-hidden">
         
         <!-- Categorias e Dificuldade Badges -->
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -248,29 +254,29 @@
         </div>
 
         <!-- Enunciado da Pergunta -->
-        <h3 id="question-text" class="text-xl sm:text-2xl font-bold text-white leading-relaxed">
+        <h3 id="question-text" class="text-lg sm:text-xl md:text-2xl font-bold text-white leading-relaxed">
           Carregando pergunta...
         </h3>
 
         <!-- Lista de Alternativas (A, B, C, D) -->
-        <div id="options-container" class="grid grid-cols-1 gap-3 pt-2">
+        <div id="options-container" class="grid grid-cols-1 gap-2.5 sm:gap-3 pt-1">
           <!-- Os botões serão inseridos dinamicamente via JS -->
         </div>
 
         <!-- Pílula de Curiosidade (Aparece após responder) -->
-        <div id="curiosity-box" class="hidden p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-1">
-          <div class="flex items-center gap-2 text-indigo-300 font-bold text-sm">
+        <div id="curiosity-box" class="hidden p-3.5 sm:p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-1">
+          <div class="flex items-center gap-1.5 text-indigo-300 font-bold text-xs sm:text-sm">
             <i data-lucide="lightbulb" class="w-4 h-4 text-amber-400"></i>
             <span>Curiosidade Pedagógica</span>
           </div>
-          <p id="curiosity-text" class="text-sm text-gray-300 leading-relaxed">
+          <p id="curiosity-text" class="text-xs sm:text-sm text-gray-300 leading-relaxed">
             Explicação didática da resposta correta.
           </p>
         </div>
 
         <!-- Botão Avançar -->
-        <div class="flex justify-end pt-2">
-          <button id="next-btn" class="hidden px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all">
+        <div class="flex justify-end pt-1">
+          <button id="next-btn" class="hidden w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all">
             <span>Próxima Pergunta</span>
             <i data-lucide="arrow-right" class="w-4 h-4"></i>
           </button>
@@ -279,55 +285,55 @@
     </section>
 
     <!-- 3. TELA DE RESULTADOS (RESULTS SCREEN) -->
-    <section id="results-screen" class="hidden glass-card rounded-3xl p-6 sm:p-10 space-y-8 animate-slide-up">
+    <section id="results-screen" class="hidden glass-card rounded-3xl p-5 sm:p-8 md:p-10 space-y-6 sm:space-y-8 animate-slide-up">
       
       <!-- Cabeçalho de Resultados -->
-      <div class="text-center space-y-3">
-        <div id="performance-badge" class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold border bg-indigo-500/20 text-indigo-300 border-indigo-500/40">
+      <div class="text-center space-y-2 sm:space-y-3">
+        <div id="performance-badge" class="inline-flex items-center px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold border bg-indigo-500/20 text-indigo-300 border-indigo-500/40">
           🏆 Desafio Concluído!
         </div>
-        <h2 class="text-3xl sm:text-4xl font-display font-extrabold text-white">
+        <h2 class="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-white">
           Resultado Final
         </h2>
-        <p class="text-gray-400 text-sm">Confira seu desempenho completo e a análise temática abaixo.</p>
+        <p class="text-gray-400 text-xs sm:text-sm">Confira seu desempenho completo e a análise temática abaixo.</p>
       </div>
 
       <!-- Resumo dos Números Chave -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="p-5 rounded-2xl bg-gray-800/50 border border-gray-700/60 text-center space-y-1">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div class="p-4 sm:p-5 rounded-2xl bg-gray-800/50 border border-gray-700/60 text-center space-y-1">
           <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pontuação Total</span>
-          <div id="final-score" class="text-3xl sm:text-4xl font-display font-extrabold text-indigo-400">0</div>
+          <div id="final-score" class="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-indigo-400">0</div>
         </div>
 
-        <div class="p-5 rounded-2xl bg-gray-800/50 border border-gray-700/60 text-center space-y-1">
+        <div class="p-4 sm:p-5 rounded-2xl bg-gray-800/50 border border-gray-700/60 text-center space-y-1">
           <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Taxa de Acertos</span>
-          <div id="final-accuracy" class="text-3xl sm:text-4xl font-display font-extrabold text-emerald-400">0%</div>
+          <div id="final-accuracy" class="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-emerald-400">0%</div>
         </div>
 
-        <div class="p-5 rounded-2xl bg-gray-800/50 border border-gray-700/60 text-center space-y-1">
+        <div class="p-4 sm:p-5 rounded-2xl bg-gray-800/50 border border-gray-700/60 text-center space-y-1">
           <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Maior Combo</span>
-          <div id="final-streak" class="text-3xl sm:text-4xl font-display font-extrabold text-amber-400">0</div>
+          <div id="final-streak" class="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold text-amber-400">0</div>
         </div>
       </div>
 
       <!-- Análise de Desempenho por Categoria -->
       <div class="space-y-3">
-        <h4 class="text-sm font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+        <h4 class="text-xs sm:text-sm font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
           <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400"></i> Desempenho por Categoria
         </h4>
-        <div id="category-stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div id="category-stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
           <!-- Estatísticas geradas via JS -->
         </div>
       </div>
 
       <!-- Botões de Ação -->
-      <div class="flex flex-wrap items-center justify-center gap-4 pt-2">
-        <button id="restart-btn" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-white shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2">
+        <button id="restart-btn" class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-sm sm:text-base text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all">
           <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           <span>Jogar Novamente</span>
         </button>
 
-        <button id="review-wrong-btn" class="px-6 py-3.5 rounded-2xl bg-gray-800 hover:bg-gray-700 font-display font-semibold text-gray-200 border border-gray-700 flex items-center gap-2 transition-all">
+        <button id="review-wrong-btn" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gray-800 hover:bg-gray-700 font-display font-semibold text-xs sm:text-sm text-gray-200 border border-gray-700 flex items-center justify-center gap-2 transition-all">
           <i data-lucide="repeat" class="w-4 h-4 text-rose-400"></i>
           <span>Refazer Apenas Erradas</span>
         </button>
@@ -335,10 +341,11 @@
 
       <!-- Gabarito e Curiosidades de Todas as Perguntas -->
       <div class="space-y-4 pt-4 border-t border-gray-800">
-        <h4 class="text-sm font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
-          <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i> Revisão e Curiosidades das 25 Perguntas
+        <h4 class="text-xs sm:text-sm font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2" id="review-heading">
+          <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i>
+          <span id="review-heading-text">Revisão e Curiosidades</span>
         </h4>
-        <div id="review-list-container" class="max-h-[480px] overflow-y-auto pr-2 space-y-3">
+        <div id="review-list-container" class="max-h-[480px] overflow-y-auto pr-1 sm:pr-2 space-y-3">
           <!-- Lista de revisão preenchida via JS -->
         </div>
       </div>
@@ -353,78 +360,82 @@
   </footer>
 
   <!-- MODAL 1: CRIADOR VISUAL DE QUIZ -->
-  <div id="quiz-builder-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-    <div class="glass-card w-full max-w-3xl rounded-3xl p-6 sm:p-8 space-y-6 max-h-[90vh] flex flex-col justify-between my-auto animate-slide-up border border-indigo-500/30">
+  <div id="quiz-builder-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="glass-card w-full max-w-3xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-h-[92dvh] flex flex-col justify-between my-auto animate-slide-up border border-indigo-500/30">
       
       <!-- Topo do Modal -->
-      <div class="flex items-center justify-between border-b border-gray-800 pb-4">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 flex items-center justify-center">
-            <i data-lucide="sparkles" class="w-5 h-5"></i>
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3 sm:pb-4">
+        <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 flex items-center justify-center shrink-0">
+            <i data-lucide="sparkles" class="w-4 h-4 sm:w-5 sm:h-5"></i>
           </div>
-          <div>
-            <h3 class="font-display font-bold text-lg text-white">Criador de Quiz Personalizado</h3>
-            <p class="text-xs text-gray-400">Monte suas perguntas e gere um link compartilhável instantâneo</p>
+          <div class="truncate">
+            <h3 class="font-display font-bold text-base sm:text-lg text-white truncate">Criador de Quiz</h3>
+            <p class="text-[11px] sm:text-xs text-gray-400 truncate">Monte perguntas ou importe via I.A / CSV</p>
           </div>
         </div>
-        <button id="close-builder-btn" class="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
+        <button id="close-builder-btn" class="p-1.5 sm:p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors shrink-0">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
       <!-- Corpo com Scroll -->
-      <div class="flex-1 overflow-y-auto pr-2 space-y-5">
-        <!-- Banner de Importação via CSV dentro do Criador -->
-        <div class="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center">
-              <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+      <div class="flex-1 overflow-y-auto pr-1 sm:pr-2 space-y-4 sm:space-y-5">
+        <!-- Banner de Importação via CSV e I.A dentro do Criador -->
+        <div class="p-3 sm:p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 flex flex-wrap items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 shrink-0">
+              <i data-lucide="sparkles" class="w-4 h-4 sm:w-5 sm:h-5"></i>
             </div>
             <div>
-              <h4 class="text-xs font-bold text-gray-200">Importar Perguntas de Planilha CSV</h4>
-              <p class="text-[11px] text-gray-400">Preencha o formulário instantaneamente subindo um arquivo .csv</p>
+              <h4 class="text-xs font-bold text-gray-200">Preenchimento Automático</h4>
+              <p class="text-[10px] sm:text-[11px] text-gray-400">Gere com I.A ou carregue um arquivo .CSV</p>
             </div>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+            <button id="builder-ai-btn" type="button" class="flex-1 sm:flex-none px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-xs font-bold text-white shadow-md shadow-purple-600/30 flex items-center justify-center gap-1.5 transition-all">
+              <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+              <span>Gerar com I.A</span>
+            </button>
             <input type="file" id="builder-csv-file-input" accept=".csv" class="hidden" />
-            <button id="builder-csv-upload-btn" type="button" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all">
+            <button id="builder-csv-upload-btn" type="button" class="flex-1 sm:flex-none px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700 flex items-center justify-center gap-1.5 transition-all">
               <i data-lucide="upload" class="w-3.5 h-3.5"></i>
               <span>Carregar CSV</span>
             </button>
-            <button id="builder-csv-template-btn" type="button" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 border border-gray-700 flex items-center gap-1 transition-colors" title="Baixar Modelo CSV">
+            <button id="builder-csv-template-btn" type="button" class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-400 border border-gray-700 flex items-center justify-center gap-1 transition-colors" title="Baixar Modelo CSV">
               <i data-lucide="download" class="w-3.5 h-3.5"></i>
-              <span>Modelo</span>
+              <span class="hidden xs:inline">Modelo</span>
             </button>
           </div>
         </div>
 
         <!-- Metadados do Quiz -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-gray-900/60 border border-gray-800">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-2xl bg-gray-900/60 border border-gray-800">
           <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Título do Quiz *</label>
-            <input type="text" id="builder-quiz-title" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Ex: Desafio de Matemática do 3º Ano" required />
+            <input type="text" id="builder-quiz-title" class="w-full px-3.5 py-2 sm:py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Ex: Desafio de Matemática do 3º Ano" required />
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-300 mb-1">Nome do Autor / Professor</label>
-            <input type="text" id="builder-quiz-author" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Ex: Prof. Deyson" />
+            <input type="text" id="builder-quiz-author" class="w-full px-3.5 py-2 sm:py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Ex: Prof. Deyson" />
           </div>
         </div>
 
         <!-- Lista Dinâmica de Perguntas -->
-        <div class="space-y-4">
+        <div class="space-y-3 sm:space-y-4">
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
               <i data-lucide="list-ordered" class="w-4 h-4 text-indigo-400"></i> Perguntas do Quiz
             </h4>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 sm:gap-3">
               <span id="builder-question-count-badge" class="text-xs text-indigo-400 font-semibold">2 perguntas</span>
               <button id="add-question-item-btn" type="button" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1">
-                <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Pergunta
+                <i data-lucide="plus" class="w-4 h-4"></i> Adicionar
               </button>
             </div>
           </div>
 
-          <div id="builder-questions-container" class="space-y-4">
+          <div id="builder-questions-container" class="space-y-3 sm:space-y-4">
             <!-- Cards de perguntas adicionados via JS -->
           </div>
         </div>
@@ -434,11 +445,11 @@
       </div>
 
       <!-- Rodapé com Botões -->
-      <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-800">
-        <button id="cancel-builder-btn" type="button" class="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 transition-colors">
+      <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 sm:pt-4 border-t border-gray-800">
+        <button id="cancel-builder-btn" type="button" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 transition-colors">
           Cancelar
         </button>
-        <button id="save-builder-quiz-btn" type="button" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-sm text-white shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition-all">
+        <button id="save-builder-quiz-btn" type="button" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-sm text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all">
           <i data-lucide="share-2" class="w-4 h-4"></i>
           <span>Salvar &amp; Gerar Link</span>
         </button>
@@ -448,8 +459,8 @@
   </div>
 
   <!-- MODAL 2: COMPARTILHAMENTO DE QUIZ (LINK & QR CODE) -->
-  <div id="quiz-share-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-    <div class="glass-card w-full max-w-lg rounded-3xl p-6 sm:p-8 space-y-6 text-center animate-slide-up border border-indigo-500/30">
+  <div id="quiz-share-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="glass-card w-full max-w-lg rounded-2xl sm:rounded-3xl p-5 sm:p-8 space-y-4 sm:space-y-6 text-center animate-slide-up border border-indigo-500/30 max-h-[92dvh] flex flex-col justify-between my-auto">
       
       <div class="flex items-center justify-between border-b border-gray-800 pb-3">
         <div class="flex items-center gap-2 text-indigo-400">
@@ -463,13 +474,13 @@
 
       <!-- Info do Quiz -->
       <div class="space-y-1">
-        <h3 id="share-quiz-title" class="text-xl font-display font-bold text-white">Meu Quiz Personalizado</h3>
+        <h3 id="share-quiz-title" class="text-lg sm:text-xl font-display font-bold text-white">Meu Quiz Personalizado</h3>
         <p id="share-quiz-info" class="text-xs text-gray-400">10 perguntas • Criado por Prof. Deyson</p>
       </div>
 
       <!-- QR Code Canvas -->
-      <div class="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/10 w-fit mx-auto shadow-inner">
-        <div id="share-qrcode-container" class="bg-white p-2 rounded-xl flex items-center justify-center w-[196px] h-[196px] overflow-hidden"></div>
+      <div class="flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl bg-white/5 border border-white/10 w-fit mx-auto shadow-inner">
+        <div id="share-qrcode-container" class="bg-white p-2 rounded-xl flex items-center justify-center w-[170px] h-[170px] sm:w-[196px] sm:h-[196px] overflow-hidden"></div>
         <span class="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
           <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Aponte a câmera do celular para jogar
         </span>
@@ -478,17 +489,17 @@
       <!-- Link de Compartilhamento -->
       <div class="space-y-2 text-left">
         <label class="block text-xs font-semibold text-gray-300">Link Direto do Quiz:</label>
-        <div class="flex items-center gap-2">
-          <input type="text" id="share-url-input" readonly class="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-xs text-indigo-300 font-mono focus:outline-none select-all" />
-          <button id="copy-share-url-btn" type="button" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white whitespace-nowrap flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition-all">
-            <i data-lucide="copy" class="w-4 h-4"></i> Copiar
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input type="text" id="share-url-input" readonly class="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-xs text-indigo-300 font-mono focus:outline-none select-all truncate" />
+          <button id="copy-share-url-btn" type="button" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white whitespace-nowrap flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/30 transition-all">
+            <i data-lucide="copy" class="w-4 h-4"></i> Copiar Link
           </button>
         </div>
         <div id="copy-feedback" class="hidden text-xs text-emerald-400 font-semibold flex items-center gap-1"></div>
       </div>
 
       <!-- Botão Jogar Agora -->
-      <div class="pt-2">
+      <div class="pt-1">
         <button id="play-shared-quiz-btn" type="button" class="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-sm text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all">
           <i data-lucide="play" class="w-4 h-4"></i>
           <span>Jogar Este Quiz Agora</span>
@@ -499,8 +510,8 @@
   </div>
 
   <!-- MODAL 3: MEUS QUIZZES SALVOS -->
-  <div id="my-quizzes-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-    <div class="glass-card w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 max-h-[85vh] flex flex-col justify-between my-auto animate-slide-up border border-indigo-500/30">
+  <div id="my-quizzes-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="glass-card w-full max-w-2xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-h-[90dvh] flex flex-col justify-between my-auto animate-slide-up border border-indigo-500/30">
       
       <div class="flex items-center justify-between border-b border-gray-800 pb-3">
         <div class="flex items-center gap-2.5">
@@ -508,23 +519,156 @@
             <i data-lucide="folder-kanban" class="w-5 h-5"></i>
           </div>
           <div>
-            <h3 class="font-display font-bold text-lg text-white">Meus Quizzes Salvos</h3>
-            <p class="text-xs text-gray-400">Seus quizzes criados e salvos localmente neste navegador</p>
+            <h3 class="font-display font-bold text-base sm:text-lg text-white">Meus Quizzes Salvos</h3>
+            <p class="text-[11px] sm:text-xs text-gray-400">Quizzes salvos localmente neste navegador</p>
           </div>
         </div>
-        <button id="close-my-quizzes-btn" class="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
+        <button id="close-my-quizzes-btn" class="p-1.5 sm:p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
       <!-- Lista de Quizzes -->
-      <div id="my-quizzes-list-container" class="flex-1 overflow-y-auto pr-2 space-y-3 max-h-[50vh]">
+      <div id="my-quizzes-list-container" class="flex-1 overflow-y-auto pr-1 sm:pr-2 space-y-2.5 sm:space-y-3 max-h-[50vh]">
         <!-- Itens inseridos dinamicamente via JS -->
       </div>
 
       <div class="pt-3 border-t border-gray-800 flex justify-end">
-        <button id="create-first-quiz-btn" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white flex items-center gap-1.5 transition-all">
+        <button id="create-first-quiz-btn" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-all">
           <i data-lucide="plus" class="w-4 h-4"></i> Criar Novo Quiz
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL 4: GERADOR DE QUIZ COM I.A -->
+  <div id="ai-quiz-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+    <div class="glass-card w-full max-w-2xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-h-[92dvh] flex flex-col justify-between my-auto animate-slide-up border border-purple-500/40 relative">
+      
+      <!-- Topo do Modal -->
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3 sm:pb-4">
+        <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 text-white flex items-center justify-center shadow-lg shadow-purple-600/30 shrink-0">
+            <i data-lucide="bot" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          </div>
+          <div class="truncate">
+            <h3 class="font-display font-bold text-base sm:text-lg text-white flex items-center gap-1.5 truncate">
+              <span>Gerador com I.A</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold">Gemini</span>
+            </h3>
+            <p class="text-[11px] sm:text-xs text-gray-400 truncate">Crie perguntas didáticas instantaneamente</p>
+          </div>
+        </div>
+        <button id="close-ai-modal-btn" class="p-1.5 sm:p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-colors shrink-0">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Corpo com Scroll -->
+      <div class="flex-1 overflow-y-auto pr-1 sm:pr-2 space-y-4 sm:space-y-5">
+        
+        <!-- Bloco de Configuração da Chave de API (Google Gemini) -->
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-1.5">
+            <label class="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+              <i data-lucide="key" class="w-3.5 h-3.5"></i> Chave de API (Google AI Studio)
+            </label>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[10px] sm:text-[11px] text-indigo-400 hover:text-indigo-300 underline underline-offset-2 flex items-center gap-1">
+              <span>Obter chave gratuita</span>
+              <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <input type="password" id="ai-api-key-input" class="w-full px-3.5 py-2 rounded-xl bg-gray-900/90 border border-gray-700 text-xs text-gray-100 placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 font-mono" placeholder="Cole sua chave de API (AIzaSy...)" />
+              <button id="toggle-key-visibility-btn" type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <button id="save-api-key-btn" type="button" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700 transition-colors shrink-0">
+              Salvar
+            </button>
+          </div>
+          <p id="ai-key-status" class="text-[10px] sm:text-[11px] text-gray-400 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Chave não informada
+          </p>
+        </div>
+
+        <!-- Formulário de Geração -->
+        <div class="space-y-3.5 sm:space-y-4">
+          <!-- Tema / Assunto Principal -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-200 mb-1">Sobre qual tema você deseja o Quiz? *</label>
+            <input type="text" id="ai-topic-input" class="w-full px-3.5 py-2 sm:py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-sm text-gray-100 placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="Ex: Sistema Solar, Revolução Francesa, Biologia Genética, Python..." />
+          </div>
+
+          <!-- Sugestões Rápidas de Temas -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-[10px] sm:text-[11px] text-gray-500 mr-0.5">Sugestões:</span>
+            <button type="button" class="ai-suggestion-tag text-[10px] sm:text-[11px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700/60 transition-colors" data-topic="Astronomia e o Sistema Solar">🚀 Astronomia</button>
+            <button type="button" class="ai-suggestion-tag text-[10px] sm:text-[11px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700/60 transition-colors" data-topic="Revolução Francesa e Iluminismo">⚔️ História</button>
+            <button type="button" class="ai-suggestion-tag text-[10px] sm:text-[11px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700/60 transition-colors" data-topic="Biologia Celular e Genética">🧬 Biologia</button>
+            <button type="button" class="ai-suggestion-tag text-[10px] sm:text-[11px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700/60 transition-colors" data-topic="História e Lógica da Computação">💻 Tecnologia</button>
+            <button type="button" class="ai-suggestion-tag text-[10px] sm:text-[11px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700/60 transition-colors" data-topic="Geografia Geral e Continentes">🌍 Geografia</button>
+          </div>
+
+          <!-- Quantidade e Nível de Dificuldade -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 pt-1">
+            <div>
+              <label class="block text-xs font-semibold text-gray-200 mb-1">Quantidade de Perguntas</label>
+              <select id="ai-count-select" class="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-700 text-xs text-gray-100 focus:border-purple-500">
+                <option value="5">5 Perguntas (Rápido)</option>
+                <option value="10" selected>10 Perguntas (Recomendado)</option>
+                <option value="15">15 Perguntas</option>
+                <option value="20">20 Perguntas</option>
+                <option value="25">25 Perguntas (Completo)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-200 mb-1">Dificuldade Pedagógica</label>
+              <select id="ai-difficulty-select" class="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-700 text-xs text-gray-100 focus:border-purple-500">
+                <option value="Misto" selected>🎯 Misto (Fácil ➔ Difícil)</option>
+                <option value="Fácil">🟢 Fácil (Iniciante)</option>
+                <option value="Médio">🟡 Médio (Intermediário)</option>
+                <option value="Difícil">🔴 Difícil (Avançado)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Texto Base de Referência (Opcional) -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-semibold text-gray-200">Texto / Conteúdo Base (Opcional)</label>
+              <span class="text-[10px] text-gray-500">Artigo ou resumo</span>
+            </div>
+            <textarea id="ai-base-text" rows="2" class="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-700 text-xs text-gray-100 placeholder-gray-500 focus:border-purple-500 resize-none" placeholder="Ex: Cole aqui um texto para a I.A extrair perguntas..."></textarea>
+          </div>
+        </div>
+
+        <!-- Overlay de Carregamento / Status da I.A -->
+        <div id="ai-loading-container" class="hidden p-4 sm:p-5 rounded-2xl bg-purple-950/40 border border-purple-500/40 text-center space-y-2.5 animate-pulse">
+          <div class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-purple-600/30 text-purple-300">
+            <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-white">Criando seu Quiz Inteligente...</h4>
+            <p id="ai-loading-step-text" class="text-[10px] sm:text-[11px] text-purple-300 mt-0.5">Formulando perguntas pedagógicas, alternativas e curiosidades</p>
+          </div>
+        </div>
+
+        <!-- Mensagem de Erro -->
+        <div id="ai-error-msg" class="hidden text-xs p-3 rounded-xl bg-rose-950/60 text-rose-300 border border-rose-700/50"></div>
+      </div>
+
+      <!-- Rodapé com Ações -->
+      <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 sm:pt-4 border-t border-gray-800">
+        <button id="cancel-ai-modal-btn" type="button" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 transition-colors">
+          Voltar
+        </button>
+        <button id="generate-ai-quiz-btn" type="button" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 font-display font-bold text-sm text-white shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 transition-all">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>Gerar Quiz com I.A</span>
         </button>
       </div>
 

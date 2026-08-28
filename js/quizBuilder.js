@@ -3,6 +3,7 @@
  */
 import { encodeQuizToUrl, renderQRCode, copyToClipboard } from './shareManager.js';
 import { parseCSV, generateCSVTemplate } from './csvParser.js';
+import { AIQuizModal } from './aiQuizModal.js';
 import { soundFx } from './audio.js';
 
 const STORAGE_KEY = 'QUIZMASTER_USER_QUIZZES';
@@ -30,10 +31,11 @@ export class QuizBuilder {
       saveQuizBtn: document.getElementById('save-builder-quiz-btn'),
       builderErrorMsg: document.getElementById('builder-error-msg'),
 
-      // Builder CSV Controls
+      // Builder CSV & AI Controls
       builderCsvFileInput: document.getElementById('builder-csv-file-input'),
       builderCsvUploadBtn: document.getElementById('builder-csv-upload-btn'),
       builderCsvTemplateBtn: document.getElementById('builder-csv-template-btn'),
+      builderAiBtn: document.getElementById('builder-ai-btn'),
 
       // Share Controls
       closeShareBtn: document.getElementById('close-share-btn'),
@@ -58,6 +60,7 @@ export class QuizBuilder {
   }
 
   init() {
+    this.aiModal = new AIQuizModal(this);
     this.bindEvents();
     this.bindBuilderCSVEvents();
   }
@@ -130,6 +133,16 @@ export class QuizBuilder {
       this.dom.playSharedQuizBtn.addEventListener('click', () => {
         soundFx.playClick();
         this.closeModal(this.dom.shareModal);
+        if (this.currentShareQuizData && this.currentShareQuizData.questions && this.currentShareQuizData.questions.length > 0) {
+          this.app.activeQuestions = this.currentShareQuizData.questions;
+          this.app.isCustomQuiz = true;
+          this.app.customFileName = this.currentShareQuizData.title || 'Quiz Personalizado';
+          this.app.dom.quizSourceLabel.innerHTML = `<strong class="text-indigo-400">${this.app.customFileName}</strong> (${this.app.activeQuestions.length} perguntas)`;
+          this.app.dom.resetDefaultQuizBtn.classList.remove('hidden');
+          if (this.app.dom.shareCSVQuizBtn) {
+            this.app.dom.shareCSVQuizBtn.classList.remove('hidden');
+          }
+        }
         this.app.startQuiz();
       });
     }
@@ -313,6 +326,24 @@ export class QuizBuilder {
     this.openModal(this.dom.builderModal);
   }
 
+  openBuilderWithAIQuiz(quizData) {
+    this.dom.builderQuestionsContainer.innerHTML = '';
+    this.dom.builderErrorMsg.classList.add('hidden');
+
+    this.editingQuizId = 'quiz_ai_' + Date.now();
+    this.dom.builderTitleInput.value = quizData.title || 'Quiz Gerado por I.A';
+    this.dom.builderAuthorInput.value = quizData.author || 'I.A QuizMaster';
+
+    if (Array.isArray(quizData.questions)) {
+      quizData.questions.forEach(q => {
+        this.addQuestionCard(q);
+      });
+    }
+
+    this.updateQuestionCount();
+    this.openModal(this.dom.builderModal);
+  }
+
   updateQuestionCount() {
     if (this.dom.builderQuestionCountBadge) {
       const count = this.dom.builderQuestionsContainer.children.length;
@@ -325,7 +356,7 @@ export class QuizBuilder {
     const qIndex = container.children.length + 1;
 
     const card = document.createElement('div');
-    card.className = 'p-5 rounded-2xl bg-gray-900/80 border border-gray-700/70 space-y-4 relative question-builder-item';
+    card.className = 'p-3.5 sm:p-5 rounded-2xl bg-gray-900/80 border border-gray-700/70 space-y-3.5 sm:space-y-4 relative question-builder-item';
     
     const questionText = data ? data.question : '';
     const category = data ? data.category : 'Geral';
@@ -546,6 +577,7 @@ export class QuizBuilder {
 
   openShareModal(quizData) {
     try {
+      this.currentShareQuizData = quizData;
       const shareUrl = encodeQuizToUrl(quizData);
 
       this.dom.shareQuizTitle.textContent = quizData.title || 'Quiz Personalizado';

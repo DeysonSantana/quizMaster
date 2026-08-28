@@ -1,48 +1,39 @@
-# 🧠 QuizMaster - Criador de Quizzes & Compartilhamento por Link (URL / QR Code)
+# 🧠 QuizMaster - Criador de Quizzes com Inteligência Artificial, CSV & Compartilhamento por Link/QR Code
 
-Aplicação web interativa, responsiva e gamificada desenvolvida para engajar participantes, estudantes ou turmas com perguntas de conhecimentos gerais ou **quizzes 100% personalizados criados online ou importados via CSV e compartilháveis por link direto e QR Code**.
+Aplicação web interativa, responsiva e gamificada desenvolvida para engajar participantes, estudantes ou turmas com perguntas de conhecimentos gerais ou **quizzes 100% personalizados criados com Inteligência Artificial (Google Gemini), importados via CSV ou montados visualmente, e compartilháveis instantaneamente por link direto e QR Code**.
 
 ---
 
-## 🌟 Funcionalidades e Diferenciais
+## 🌟 Principais Funcionalidades
+
+- **🤖 Gerador Inteligente de Quiz com I.A (Google Gemini)**:
+  - Digite qualquer tema (ex: *"Astronomia"*, *"Revolução Francesa"*, *"Biologia Celular"*, *"Programação Python"*) e a I.A formula instantaneamente um quiz balanceado e didático.
+  - Suporte a **Texto Base / Resumo de Aula**: Cole um artigo ou trecho de livro para a I.A extrair perguntas focadas naquele conteúdo.
+  - Selecione a quantidade (5, 10, 15, 20 ou 25 perguntas) e a dificuldade (Fácil, Médio, Difícil ou **Misto com Progressão Pedagógica**).
+  - Cada questão gerada pela I.A inclui 4 opções sem ambiguidades e uma **Pílula de Curiosidade** contextualizada.
+  - Configuração simples da chave gratuita obtida no [Google AI Studio](https://aistudio.google.com/app/apikey), salva com segurança no navegador (`localStorage`).
 
 - **✨ Criador Visual de Quizzes Online**:
-  - Crie perguntas com formulário interativo definindo título, autor, categoria, dificuldade, 4 opções, resposta correta e pílula de curiosidade.
-  - Adicione quantas perguntas quiser com 1 clique.
+  - Crie e edite perguntas com formulário interativo definindo título, autor, categoria, dificuldade, 4 opções, resposta correta e curiosidade didática.
   - Salva automaticamente na aba **"Meus Quizzes"** (`localStorage`) para nunca perder seu conteúdo.
 
-- **🔗 Compartilhamento Instantâneo por Link (URL Portátil + QR Code)**:
+- **🔗 Compartilhamento Instantâneo por Link (URL Portátil + QR Code Nativo)**:
   - Todas as perguntas e respostas são compactadas e codificadas no link (`#quiz=...`) usando algoritmo de alta eficiência (`LZ-String`).
-  - **Zero backend/banco de dados necessário**: basta enviar o link ou projetar o **QR Code** gerado na tela para os alunos ou amigos jogarem de qualquer celular ou computador.
-  - Ao abrir o link, o quiz personalizado carrega na hora!
+  - **Zero necessidade de backend ou banco de dados**: envie o link direto ou projete o **QR Code** gerado na tela para qualquer jogador acessar de celulares ou computadores.
+  - Motor nativo de QR Code de alta densidade (Tipos 1 a 40) que funciona 100% offline.
 
 - **📁 Importação e Compartilhamento via CSV**:
-  - Faça upload de arquivos `.CSV` com qualquer quantidade de perguntas.
+  - Faça upload de arquivos `.CSV` com qualquer quantidade de perguntas diretamente na tela inicial ou dentro do Criador Visual.
   - Suporte automático a delimitadores por **vírgula (`,`)** ou **ponto-e-vírgula (`;`)**.
   - Botão de **"Baixar Modelo CSV"** com 1 clique direto na interface.
-  - Botão de **"Gerar Link"** direto do arquivo CSV importado para compartilhar com sua turma.
 
 - **25 Perguntas Originais Cuidadosamente Balanceadas**:
-  - **Categorias**: História, Geografia, Ciência e Tecnologia, Arte e Cultura Pop, e Esportes.
-  - **Dificuldade Progressiva**: Fácil, Médio e Difícil (Expert).
+  - Perguntas de conhecimentos gerais cobrindo História, Geografia, Ciência e Tecnologia, Arte e Cultura Pop, e Esportes.
 
 - **Gamificação Completa**:
   - Pontuação dinâmica com multiplicador por nível de dificuldade e tempo restante.
-  - Sistema de **Combos / Streaks** com bônus de pontuação e efeitos sonoros especiais.
-  - Efeitos visuais com confetes (`canvas-confetti`) em combos altos e no encerramento.
-
-- **Fator Didático**:
-  - **Pílula de Curiosidade** contextualizada e exibida após cada pergunta para garantir aprendizado contínuo.
-
-- **Áudio Nativo Imersivo**:
-  - Efeitos sonoros para cliques, acertos, erros, combos e vitória gerados dinamicamente via **Web Audio API** (sem arquivos externos de áudio).
-
-- **Estatísticas e Revisão Completa**:
-  - Painel de resultados detalhado com taxa de precisão, maior combo e gráficos de aproveitamento por categoria.
-  - Gabarito com revisão comentada de todas as perguntas e opção de **Refazer apenas as erradas**.
-
-- **Acessibilidade e Atalhos**:
-  - Suporte a teclado: Teclas `A`, `B`, `C`, `D` ou `1`, `2`, `3`, `4` para selecionar respostas e `Enter` para avançar.
+  - Sistema de **Combos / Streaks** com bônus de pontuação, confetes (`canvas-confetti`) e efeitos sonoros sintetizados via **Web Audio API**.
+  - Painel de resultados com gráficos por categoria, gabarito comentado e botão para **"Refazer Apenas Erradas"**.
 
 ---
 
@@ -56,7 +47,10 @@ quiz/
 │   └── styles.css              # Estilos visuais, glassmorphism e animações
 ├── js/
 │   ├── questions.js            # Base de dados padrão (25 perguntas de conhecimentos gerais)
+│   ├── aiService.js            # Integração com API Google Gemini e geração com JSON Schema
+│   ├── aiQuizModal.js          # Controlador do modal do assistente de I.A
 │   ├── csvParser.js            # Parser de CSV com detecção de delimitador e gerador de modelo
+│   ├── qrcodeEngine.js         # Motor nativo de alta densidade de QR Code (Tipos 1 a 40)
 │   ├── shareManager.js         # Codificação de URL compactada, QR Code e cópia de link
 │   ├── quizBuilder.js          # Formulário visual de criação/edição e LocalStorage
 │   ├── audio.js                # Gerenciador de sintetizador de áudio (Web Audio API)
