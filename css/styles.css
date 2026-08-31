@@ -1,18 +1,144 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap');
 
 :root {
   --font-sans: 'Plus Jakarta Sans', sans-serif;
   --font-display: 'Outfit', sans-serif;
+  
+  /* Tema Padrão: Cyberpunk / Dark Neon */
+  --bg-main: #0b0f19;
+  --text-main: #f3f4f6;
+  --card-bg: rgba(17, 24, 39, 0.85);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --mesh-1: rgba(99, 102, 241, 0.15);
+  --mesh-2: rgba(236, 72, 153, 0.15);
+  --mesh-3: rgba(16, 185, 129, 0.12);
 }
+
+/* ===================================================
+   SISTEMA DE TEMAS DINÂMICOS
+   =================================================== */
+
+/* 1. MODO CLARO (LIGHT MODERN) */
+[data-theme="light"], .light-theme {
+  --bg-main: #f8fafc;
+  --text-main: #0f172a;
+  --card-bg: rgba(255, 255, 255, 0.94);
+  --card-border: rgba(148, 163, 184, 0.25);
+  --mesh-1: rgba(99, 102, 241, 0.08);
+  --mesh-2: rgba(236, 72, 153, 0.06);
+  --mesh-3: rgba(16, 185, 129, 0.06);
+}
+
+[data-theme="light"] body, body.light-theme {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+[data-theme="light"] .glass-card, .light-theme .glass-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.07);
+}
+
+[data-theme="light"] .text-white, .light-theme .text-white {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .text-gray-100, .light-theme .text-gray-100,
+[data-theme="light"] .text-gray-200, .light-theme .text-gray-200 {
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .text-gray-300, .light-theme .text-gray-300,
+[data-theme="light"] .text-gray-400, .light-theme .text-gray-400 {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .bg-gray-900, .light-theme .bg-gray-900,
+[data-theme="light"] .bg-gray-900\/80, .light-theme .bg-gray-900\/80,
+[data-theme="light"] .bg-gray-900\/90, .light-theme .bg-gray-900\/90,
+[data-theme="light"] .bg-gray-900\/60, .light-theme .bg-gray-900\/60 {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .bg-gray-800, .light-theme .bg-gray-800,
+[data-theme="light"] .bg-gray-800\/80, .light-theme .bg-gray-800\/80,
+[data-theme="light"] .bg-gray-800\/50, .light-theme .bg-gray-800\/50 {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .border-gray-800, .light-theme .border-gray-800,
+[data-theme="light"] .border-gray-700, .light-theme .border-gray-700,
+[data-theme="light"] .border-gray-700\/60, .light-theme .border-gray-700\/60,
+[data-theme="light"] .border-gray-700\/80, .light-theme .border-gray-700\/80 {
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* 2. TEMA EMERALD (NATURE) */
+[data-theme="emerald"] {
+  --bg-main: #041610;
+  --mesh-1: rgba(16, 185, 129, 0.2);
+  --mesh-2: rgba(5, 150, 105, 0.15);
+  --mesh-3: rgba(52, 211, 153, 0.12);
+}
+[data-theme="emerald"] body {
+  background-color: #041610;
+}
+[data-theme="emerald"] .glass-card {
+  background: rgba(6, 30, 22, 0.85);
+  border-color: rgba(16, 185, 129, 0.18);
+}
+
+/* 3. TEMA SUNSET (WARM) */
+[data-theme="sunset"] {
+  --bg-main: #140a08;
+  --mesh-1: rgba(249, 115, 22, 0.18);
+  --mesh-2: rgba(244, 63, 94, 0.16);
+  --mesh-3: rgba(234, 179, 8, 0.12);
+}
+[data-theme="sunset"] body {
+  background-color: #140a08;
+}
+[data-theme="sunset"] .glass-card {
+  background: rgba(28, 14, 11, 0.85);
+  border-color: rgba(249, 115, 22, 0.18);
+}
+
+/* 4. TEMA MIDNIGHT (AMOLED) */
+[data-theme="midnight"] {
+  --bg-main: #000000;
+  --mesh-1: rgba(168, 85, 247, 0.14);
+  --mesh-2: rgba(6, 182, 212, 0.14);
+  --mesh-3: rgba(236, 72, 153, 0.1);
+}
+[data-theme="midnight"] body {
+  background-color: #000000;
+}
+[data-theme="midnight"] .glass-card {
+  background: rgba(10, 10, 10, 0.95);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ===================================================
+   ESTILOS GERAIS
+   =================================================== */
 
 body {
   font-family: var(--font-sans);
-  background-color: #0b0f19;
-  color: #f3f4f6;
+  background-color: var(--bg-main);
+  color: var(--text-main);
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .font-display {
@@ -22,19 +148,20 @@ body {
 /* Background Animated Gradient Mesh */
 .bg-mesh {
   background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.12) 0px, transparent 50%);
+    radial-gradient(at 0% 0%, var(--mesh-1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, var(--mesh-2) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, var(--mesh-3) 0px, transparent 50%);
   background-attachment: fixed;
 }
 
 /* Glass Card */
 .glass-card {
-  background: rgba(17, 24, 39, 0.85);
+  background: var(--card-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--card-border);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .glass-pill {
@@ -129,23 +256,19 @@ body {
 
 /* Mobile-First Responsiveness & Touch Adjustments */
 @media (max-width: 640px) {
-  /* Evita auto-zoom do Safari no iOS */
   input, select, textarea {
     font-size: 16px !important;
   }
 
-  /* Modais ocupam tela cheia com bordas arredondadas confortáveis */
   .glass-card {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
 
-  /* Rolagem por toque suave */
   .overflow-y-auto {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Ajuste de padding de botões e touch targets */
   button, .quiz-option {
     touch-action: manipulation;
   }
@@ -189,4 +312,16 @@ body {
 
 .drawer-panel.active {
   transform: translateX(0);
+}
+
+/* Emoji Avatar Picker styling */
+.emoji-avatar-btn {
+  transition: all 0.15s ease-in-out;
+}
+.emoji-avatar-btn:hover {
+  transform: scale(1.15);
+}
+.emoji-avatar-btn.selected {
+  outline: 2px solid #6366f1;
+  background-color: rgba(99, 102, 241, 0.3);
 }

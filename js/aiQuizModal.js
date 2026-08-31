@@ -24,7 +24,8 @@ export class AIQuizModal {
       aiKeyStatus: document.getElementById('ai-key-status'),
       topicInput: document.getElementById('ai-topic-input'),
       baseTextInput: document.getElementById('ai-base-text'),
-      countSelect: document.getElementById('ai-count-select'),
+      countInput: document.getElementById('ai-count-input'),
+      countPresets: document.querySelectorAll('.ai-count-preset'),
       difficultySelect: document.getElementById('ai-difficulty-select'),
       suggestionTags: document.querySelectorAll('.ai-suggestion-tag'),
 
@@ -106,6 +107,23 @@ export class AIQuizModal {
       });
     });
 
+    // Atalhos de quantidade de perguntas
+    this.dom.countPresets.forEach(presetBtn => {
+      presetBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        const cnt = presetBtn.getAttribute('data-count');
+        if (this.dom.countInput) {
+          this.dom.countInput.value = cnt;
+        }
+        this.dom.countPresets.forEach(b => {
+          b.classList.remove('bg-purple-950/60', 'text-purple-300', 'border-purple-500/40', 'font-bold');
+          b.classList.add('bg-gray-800', 'text-gray-300', 'border-gray-700');
+        });
+        presetBtn.classList.add('bg-purple-950/60', 'text-purple-300', 'border-purple-500/40', 'font-bold');
+        presetBtn.classList.remove('bg-gray-800', 'text-gray-300', 'border-gray-700');
+      });
+    });
+
     // Botão Gerar Quiz com I.A
     if (this.dom.generateAiQuizBtn) {
       this.dom.generateAiQuizBtn.addEventListener('click', () => {
@@ -184,7 +202,8 @@ export class AIQuizModal {
   async handleGenerate() {
     const topic = this.dom.topicInput.value.trim();
     const baseText = this.dom.baseTextInput.value.trim();
-    const count = parseInt(this.dom.countSelect.value, 10) || 5;
+    const rawCount = this.dom.countInput ? parseInt(this.dom.countInput.value, 10) : 10;
+    const count = isNaN(rawCount) || rawCount < 1 ? 10 : Math.min(rawCount, 100);
     const difficulty = this.dom.difficultySelect.value;
     const key = this.dom.apiKeyInput.value.trim();
 

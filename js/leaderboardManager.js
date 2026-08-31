@@ -5,11 +5,14 @@
 import { serverlessDB } from './firebaseConfig.js';
 import { soundFx } from './audio.js';
 
+const AVATARS = ['🎓', '🚀', '🧠', '🦁', '🦊', '🤖', '🧙‍♂️', '👑', '⚡', '🌟', '🐱', '🐶', '👾', '🎯', '🏆', '🔥'];
+
 export class LeaderboardManager {
   constructor(app) {
     this.app = app;
     this.activeRoomForPlayer = null;
     this.playerNickname = '';
+    this.selectedPlayerAvatar = '🚀';
     this.firestoreUnsubscribe = null;
 
     this.dom = {
@@ -20,6 +23,8 @@ export class LeaderboardManager {
       nicknameInput: document.getElementById('player-nickname-input'),
       nicknameRoomTitle: document.getElementById('nickname-room-title'),
       nicknameRoomPin: document.getElementById('nickname-room-pin'),
+      playerAvatarPreview: document.getElementById('player-avatar-preview'),
+      playerEmojiGrid: document.getElementById('player-emoji-grid'),
       confirmNicknameBtn: document.getElementById('confirm-nickname-btn'),
 
       // Leaderboard / Podium Modal
@@ -83,8 +88,44 @@ export class LeaderboardManager {
     this.activeRoomForPlayer = room;
     if (this.dom.nicknameRoomTitle) this.dom.nicknameRoomTitle.textContent = room.title;
     if (this.dom.nicknameRoomPin) this.dom.nicknameRoomPin.textContent = `PIN: ${room.pin}`;
+    
+    // Define avatar padrão (do usuário logado ou foguete 🚀)
+    if (this.app.authManager && this.app.authManager.currentUser && this.app.authManager.currentUser.avatarEmoji) {
+      this.selectedPlayerAvatar = this.app.authManager.currentUser.avatarEmoji;
+    } else {
+      this.selectedPlayerAvatar = '🚀';
+    }
+
+    if (this.dom.playerAvatarPreview) {
+      this.dom.playerAvatarPreview.textContent = this.selectedPlayerAvatar;
+    }
+
+    // Renderiza botões de emoji no modal de nickname
+    if (this.dom.playerEmojiGrid) {
+      this.dom.playerEmojiGrid.innerHTML = '';
+      AVATARS.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `emoji-avatar-btn p-1 rounded-lg border flex items-center justify-center text-lg transition-all ${
+          emoji === this.selectedPlayerAvatar 
+            ? 'selected bg-indigo-600/40 border-indigo-500' 
+            : 'bg-gray-800/60 border-gray-700/60 hover:bg-gray-700'
+        }`;
+        btn.textContent = emoji;
+        btn.addEventListener('click', () => {
+          soundFx.playClick();
+          this.selectedPlayerAvatar = emoji;
+          if (this.dom.playerAvatarPreview) {
+            this.dom.playerAvatarPreview.textContent = emoji;
+          }
+          this.promptNicknameAndPlay(this.activeRoomForPlayer);
+        });
+        this.dom.playerEmojiGrid.appendChild(btn);
+      });
+    }
+
     if (this.dom.nicknameInput) {
-      this.dom.nicknameInput.value = '';
+      this.dom.nicknameInput.value = (this.app.authManager && this.app.authManager.currentUser) ? this.app.authManager.currentUser.name : '';
       setTimeout(() => this.dom.nicknameInput.focus(), 150);
     }
     this.dom.nicknameModal.classList.remove('hidden');
@@ -111,7 +152,7 @@ export class LeaderboardManager {
     this.app.activeQuestions = this.activeRoomForPlayer.questions;
     this.app.isCustomQuiz = true;
     this.app.customFileName = `${this.activeRoomForPlayer.title} (PIN: ${this.activeRoomForPlayer.pin})`;
-    this.app.dom.quizSourceLabel.innerHTML = `🎮 <strong class="text-indigo-400">${this.activeRoomForPlayer.title}</strong> • Jogador: <strong class="text-pink-400">${this.playerNickname}</strong>`;
+    this.app.dom.quizSourceLabel.innerHTML = `🎮 <strong class="text-indigo-400">${this.activeRoomForPlayer.title}</strong> • Jogador: <strong class="text-pink-400">${this.selectedPlayerAvatar} ${this.playerNickname}</strong>`;
     this.app.dom.resetDefaultQuizBtn.classList.remove('hidden');
 
     soundFx.playClick();
@@ -127,6 +168,7 @@ export class LeaderboardManager {
     const scoreData = {
       pin: this.activeRoomForPlayer.pin,
       nickname: this.playerNickname,
+      avatarEmoji: this.selectedPlayerAvatar || '🚀',
       score: score,
       accuracy: accuracy,
       maxStreak: maxStreak,
@@ -225,18 +267,24 @@ export class LeaderboardManager {
       this.dom.leaderboardPlayerCount.textContent = `${scores.length} ${scores.length === 1 ? 'jogador' : 'jogadores'}`;
     }
 
-    // Atualiza Pódio (Top 3)
+    // Atualiza Pódio (Top 3) com Avatar
     const top1 = scores[0];
     const top2 = scores[1];
     const top3 = scores[2];
 
-    if (this.dom.podium1Name) this.dom.podium1Name.textContent = top1 ? top1.nickname : '-';
+    if (this.dom.podium1Name) {
+      this.dom.podium1Name.innerHTML = top1 ? `<span class="mr-1">${top1.avatarEmoji || '👑'}</span>${this.escapeHtml(top1.nickname)}` : '-';
+    }
     if (this.dom.podium1Score) this.dom.podium1Score.textContent = top1 ? `${top1.score} pts` : '0 pts';
 
-    if (this.dom.podium2Name) this.dom.podium2Name.textContent = top2 ? top2.nickname : '-';
+    if (this.dom.podium2Name) {
+      this.dom.podium2Name.innerHTML = top2 ? `<span class="mr-1">${top2.avatarEmoji || '🥈'}</span>${this.escapeHtml(top2.nickname)}` : '-';
+    }
     if (this.dom.podium2Score) this.dom.podium2Score.textContent = top2 ? `${top2.score} pts` : '0 pts';
 
-    if (this.dom.podium3Name) this.dom.podium3Name.textContent = top3 ? top3.nickname : '-';
+    if (this.dom.podium3Name) {
+      this.dom.podium3Name.innerHTML = top3 ? `<span class="mr-1">${top3.avatarEmoji || '🥉'}</span>${this.escapeHtml(top3.nickname)}` : '-';
+    }
     if (this.dom.podium3Score) this.dom.podium3Score.textContent = top3 ? `${top3.score} pts` : '0 pts';
 
     // Tabela completa
@@ -255,15 +303,17 @@ export class LeaderboardManager {
           else if (rank === 2) rankBadge = `<span class="text-xl">🥈</span>`;
           else if (rank === 3) rankBadge = `<span class="text-xl">🥉</span>`;
 
+          const avatar = player.avatarEmoji || '👤';
+
           const row = document.createElement('tr');
           row.className = `border-b border-gray-800/60 ${rank <= 3 ? 'bg-indigo-950/20' : 'hover:bg-gray-800/40'} transition-colors`;
           row.innerHTML = `
             <td class="py-3 px-4 text-center">${rankBadge}</td>
             <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
-              <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 flex items-center justify-center text-xs text-white font-bold">
-                ${(player.nickname || 'J').charAt(0).toUpperCase()}
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600/40 to-pink-600/40 border border-white/10 flex items-center justify-center text-base shrink-0 select-none shadow-sm">
+                ${avatar}
               </div>
-              <span>${this.escapeHtml(player.nickname)}</span>
+              <span class="truncate max-w-[130px] sm:max-w-[200px]">${this.escapeHtml(player.nickname)}</span>
             </td>
             <td class="py-3 px-4 text-right font-display font-extrabold text-indigo-400">${player.score} pts</td>
             <td class="py-3 px-4 text-right font-semibold text-emerald-400 hidden sm:table-cell">${player.accuracy}%</td>

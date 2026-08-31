@@ -117,6 +117,11 @@
           <span>Criar</span>
         </button>
 
+        <!-- Mudar Tema / Modo Escuro/Claro (Sempre Visível) -->
+        <button id="theme-toggle-btn" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-900/80 border border-gray-700/80 hover:bg-gray-800 flex items-center justify-center transition-colors shrink-0" title="Mudar Tema / Modo Escuro e Claro">
+          <i data-lucide="palette" class="w-4 h-4 sm:w-5 sm:h-5 text-purple-400"></i>
+        </button>
+
         <!-- Alternar Som (Sempre Visível) -->
         <button id="sound-toggle-btn" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-900/80 border border-gray-700/80 hover:bg-gray-800 flex items-center justify-center transition-colors shrink-0" title="Alternar Efeitos Sonoros">
           <i data-lucide="volume-2" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400"></i>
@@ -158,8 +163,8 @@
         <!-- Card de Usuário / Perfil no Drawer -->
         <div id="drawer-auth-card" class="p-3 rounded-2xl bg-gray-900/80 border border-gray-800 flex items-center justify-between gap-2">
           <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-9 h-9 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0">
-              <i data-lucide="user" class="w-4 h-4"></i>
+            <div id="drawer-user-avatar-container" class="w-9 h-9 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
+              <span id="drawer-user-avatar-text">🎓</span>
             </div>
             <div class="min-w-0">
               <h4 id="drawer-user-name" class="font-bold text-xs text-white truncate">Minha Conta</h4>
@@ -231,7 +236,17 @@
       </div>
 
       <!-- Rodapé do Drawer -->
-      <div class="pt-4 border-t border-gray-800 space-y-3">
+      <div class="pt-4 border-t border-gray-800 space-y-2.5">
+        <!-- Seletor de Tema -->
+        <button id="drawer-theme-btn" type="button" class="w-full p-2.5 rounded-xl bg-gray-900/80 hover:bg-gray-800 border border-gray-800 flex items-center justify-between text-xs font-semibold text-gray-200 transition-colors">
+          <span class="flex items-center gap-2">
+            <span>🎨</span>
+            <span>Tema da Aplicação</span>
+          </span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+        </button>
+
+        <!-- Alternador de Som -->
         <div class="flex items-center justify-between p-2.5 rounded-xl bg-gray-900/60 border border-gray-800">
           <div class="flex items-center gap-2">
             <i data-lucide="volume-2" class="w-4 h-4 text-indigo-400"></i>
@@ -831,14 +846,22 @@
           <!-- Quantidade e Nível de Dificuldade -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 pt-1">
             <div>
-              <label class="block text-xs font-semibold text-gray-200 mb-1">Quantidade de Perguntas</label>
-              <select id="ai-count-select" class="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-700 text-xs text-gray-100 focus:border-purple-500">
-                <option value="5">5 Perguntas (Rápido)</option>
-                <option value="10" selected>10 Perguntas (Recomendado)</option>
-                <option value="15">15 Perguntas</option>
-                <option value="20">20 Perguntas</option>
-                <option value="25">25 Perguntas (Completo)</option>
-              </select>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-xs font-semibold text-gray-200">Qtd. de Perguntas (Aberto)</label>
+                <span class="text-[10px] text-purple-300 font-mono">1 a 50+</span>
+              </div>
+              <div class="space-y-1.5">
+                <input type="number" id="ai-count-input" min="1" max="100" value="10" class="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-700 text-xs text-gray-100 font-bold focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-center" />
+                <div class="flex flex-wrap items-center gap-1">
+                  <span class="text-[9px] text-gray-500">Rápido:</span>
+                  <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700" data-count="5">5</button>
+                  <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-500/40 font-bold" data-count="10">10</button>
+                  <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700" data-count="15">15</button>
+                  <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700" data-count="20">20</button>
+                  <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700" data-count="30">30</button>
+                  <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700" data-count="50">50</button>
+                </div>
+              </div>
             </div>
             <div>
               <label class="block text-xs font-semibold text-gray-200 mb-1">Dificuldade Pedagógica</label>
@@ -967,15 +990,32 @@
         </button>
       </div>
 
-      <div class="flex flex-col items-center gap-2 py-2">
-        <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-indigo-600/30">
-          <i data-lucide="user" class="w-8 h-8"></i>
+      <!-- Avatar & Info do Usuário -->
+      <div class="flex flex-col items-center gap-2 py-1">
+        <div id="profile-avatar-display" class="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-3xl shadow-lg shadow-indigo-600/30 border-2 border-white/20 select-none">
+          🎓
         </div>
         <h4 id="profile-name-text" class="font-bold text-base text-white">Usuário</h4>
         <p id="profile-email-text" class="text-xs text-gray-400">usuario@exemplo.com</p>
       </div>
 
-      <div class="space-y-2 pt-2 border-t border-gray-800 text-left">
+      <!-- Seletor de Emoji de Avatar -->
+      <div class="space-y-1.5 p-3 rounded-2xl bg-gray-900/70 border border-gray-800 text-left">
+        <label class="block text-[11px] font-bold text-gray-300">Escolha seu Avatar Emoji:</label>
+        <div id="profile-emoji-grid" class="grid grid-cols-8 gap-1 text-lg">
+          <!-- Injetado dinamicamente / botões de emoji -->
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-1 border-t border-gray-800 text-left">
+        <!-- Mudar Tema -->
+        <button id="profile-theme-btn" type="button" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 border border-gray-700 text-xs font-semibold text-gray-200 flex items-center justify-between transition-colors">
+          <span class="flex items-center gap-2">
+            <span>🎨</span> Mudar Tema da Aplicação
+          </span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+        </button>
+
         <button id="open-cloud-config-btn" type="button" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 border border-gray-700 text-xs font-semibold text-gray-200 flex items-center justify-between transition-colors">
           <span class="flex items-center gap-2">
             <i data-lucide="cloud-cog" class="w-4 h-4 text-purple-400"></i> Conectar Nuvem (Firebase)
@@ -1163,12 +1203,20 @@
         </button>
       </div>
 
-      <div class="py-2">
-        <div class="w-12 h-12 rounded-full bg-indigo-600/30 text-indigo-300 mx-auto flex items-center justify-center mb-2">
-          <i data-lucide="smile" class="w-6 h-6"></i>
+      <div class="py-1">
+        <div id="player-avatar-preview" class="w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 mx-auto flex items-center justify-center mb-1.5 text-2xl shadow-md border-2 border-white/20 select-none">
+          🚀
         </div>
-        <h4 class="font-bold text-sm text-white">Qual é o seu nome ou apelido?</h4>
-        <p class="text-[11px] text-gray-400 mt-0.5">Seu nome aparecerá no pódio e ranking da sala.</p>
+        <h4 class="font-bold text-sm text-white">Escolha seu Avatar e Apelido</h4>
+        <p class="text-[11px] text-gray-400 mt-0.5">Seu emoji e nome aparecerão no pódio e ranking da sala.</p>
+      </div>
+
+      <!-- Grade de Seleção de Avatar para o Jogador -->
+      <div class="p-2.5 rounded-2xl bg-gray-900/70 border border-gray-800 text-left space-y-1">
+        <label class="block text-[10px] font-bold text-gray-300">Escolha seu Emoji:</label>
+        <div id="player-emoji-grid" class="grid grid-cols-8 gap-1 text-base">
+          <!-- Injetado via JS -->
+        </div>
       </div>
 
       <form id="player-nickname-form" class="space-y-3">
@@ -1312,6 +1360,37 @@
         <button id="create-new-room-from-list-btn" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white flex items-center gap-1.5 transition-all">
           <i data-lucide="plus" class="w-4 h-4"></i> Nova Sala
         </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL 13: SELETOR DE TEMAS & CORES -->
+  <div id="theme-selector-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="glass-card w-full max-w-md rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 my-auto animate-slide-up border border-purple-500/30">
+      
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-purple-600/30 text-purple-300 flex items-center justify-center text-lg">
+            🎨
+          </div>
+          <div>
+            <h3 class="font-display font-bold text-base sm:text-lg text-white">Personalizar Tema</h3>
+            <p class="text-[11px] text-gray-400">Escolha o visual e modo de exibição preferido</p>
+          </div>
+        </div>
+        <button id="close-theme-modal-btn" class="p-1 rounded-lg text-gray-400 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Lista de Opções de Tema -->
+      <div id="theme-options-container" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+        <!-- Injetado dinamicamente pelo ThemeManager -->
+      </div>
+
+      <div class="pt-2 text-center">
+        <p class="text-[10px] text-gray-500">Seu tema é salvo automaticamente neste navegador.</p>
       </div>
 
     </div>

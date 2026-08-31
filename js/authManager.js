@@ -7,6 +7,11 @@ import { soundFx } from './audio.js';
 
 const STORAGE_SESSION_USER = 'QUIZMASTER_SESSION_USER';
 
+export const AVATAR_EMOJIS = [
+  '🎓', '🚀', '🧠', '🦁', '🦊', '🤖', '🧙‍♂️', '👑',
+  '⚡', '🌟', '🐱', '🐶', '👾', '🎯', '🏆', '🔥'
+];
+
 export class AuthManager {
   constructor(app) {
     this.app = app;
@@ -41,8 +46,12 @@ export class AuthManager {
       closeProfileModalBtn: document.getElementById('close-profile-modal-btn'),
       profileEmailText: document.getElementById('profile-email-text'),
       profileNameText: document.getElementById('profile-name-text'),
+      profileAvatarDisplay: document.getElementById('profile-avatar-display'),
+      profileEmojiGrid: document.getElementById('profile-emoji-grid'),
+      profileThemeBtn: document.getElementById('profile-theme-btn'),
       logoutBtn: document.getElementById('profile-logout-btn'),
       openCloudConfigBtn: document.getElementById('open-cloud-config-btn'),
+      drawerUserAvatarText: document.getElementById('drawer-user-avatar-text'),
 
       // Cloud Config Modal
       cloudModal: document.getElementById('cloud-config-modal'),
@@ -168,6 +177,17 @@ export class AuthManager {
       this.dom.logoutBtn.addEventListener('click', async () => {
         soundFx.playClick();
         await this.logout();
+      });
+    }
+
+    // Mudar Tema pelo Perfil
+    if (this.dom.profileThemeBtn) {
+      this.dom.profileThemeBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeProfileModal();
+        if (this.app && this.app.themeManager) {
+          this.app.themeManager.openThemeModal();
+        }
       });
     }
 
@@ -428,6 +448,56 @@ export class AuthManager {
     if (!this.currentUser) return;
     if (this.dom.profileEmailText) this.dom.profileEmailText.textContent = this.currentUser.email;
     if (this.dom.profileNameText) this.dom.profileNameText.textContent = this.currentUser.name;
+
+    const currentEmoji = this.currentUser.avatarEmoji || '🎓';
+    if (this.dom.profileAvatarDisplay) {
+      this.dom.profileAvatarDisplay.textContent = currentEmoji;
+    }
+
+    // Renderiza a grade de emojis de avatar
+    if (this.dom.profileEmojiGrid) {
+      this.dom.profileEmojiGrid.innerHTML = '';
+      AVATAR_EMOJIS.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `emoji-avatar-btn p-1.5 rounded-xl border flex items-center justify-center text-xl transition-all ${
+          emoji === currentEmoji 
+            ? 'selected bg-indigo-600/30 border-indigo-500 shadow-md shadow-indigo-600/30' 
+            : 'bg-gray-800/60 border-gray-700/60 hover:bg-gray-700'
+        }`;
+        btn.textContent = emoji;
+        btn.title = `Escolher avatar ${emoji}`;
+
+        btn.addEventListener('click', async () => {
+          soundFx.playClick();
+          this.currentUser.avatarEmoji = emoji;
+          this.saveSessionUser(this.currentUser);
+          if (this.dom.profileAvatarDisplay) {
+            this.dom.profileAvatarDisplay.textContent = emoji;
+          }
+          this.openProfileModal();
+          this.updateUI();
+
+          // Sincroniza com Firebase se conectado
+          if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+            try {
+              const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+              await setDoc(doc(serverlessDB.firestore, 'user_profiles', this.currentUser.uid), {
+                avatarEmoji: emoji,
+                name: this.currentUser.name,
+                email: this.currentUser.email,
+                updatedAt: new Date().toISOString()
+              }, { merge: true });
+            } catch (err) {
+              console.warn('Erro ao salvar avatar no Firestore:', err);
+            }
+          }
+        });
+
+        this.dom.profileEmojiGrid.appendChild(btn);
+      });
+    }
+
     this.dom.profileModal.classList.remove('hidden');
     document.body.classList.add('overflow-hidden');
     if (window.lucide) window.lucide.createIcons();
@@ -488,13 +558,16 @@ export class AuthManager {
     const drawerUserName = document.getElementById('drawer-user-name');
     const drawerUserStatus = document.getElementById('drawer-user-status');
     const drawerAuthBtn = document.getElementById('drawer-auth-btn');
+    const drawerUserAvatarText = document.getElementById('drawer-user-avatar-text');
+
+    const userEmoji = (this.currentUser && this.currentUser.avatarEmoji) ? this.currentUser.avatarEmoji : '🎓';
 
     if (this.currentUser) {
       if (this.dom.authBtn) this.dom.authBtn.classList.add('hidden');
       if (this.dom.userProfileBtn) {
         this.dom.userProfileBtn.classList.remove('hidden');
         if (this.dom.userAvatarText) {
-          this.dom.userAvatarText.textContent = (this.currentUser.name || 'U').charAt(0).toUpperCase();
+          this.dom.userAvatarText.textContent = userEmoji;
         }
         if (this.dom.userDisplayName) {
           this.dom.userDisplayName.textContent = this.currentUser.name;
@@ -503,6 +576,7 @@ export class AuthManager {
 
       if (drawerUserName) drawerUserName.textContent = this.currentUser.name || 'Usuário';
       if (drawerUserStatus) drawerUserStatus.textContent = this.currentUser.email || 'Conectado';
+      if (drawerUserAvatarText) drawerUserAvatarText.textContent = userEmoji;
       if (drawerAuthBtn) {
         drawerAuthBtn.textContent = 'Perfil';
         drawerAuthBtn.onclick = () => {
@@ -516,6 +590,7 @@ export class AuthManager {
 
       if (drawerUserName) drawerUserName.textContent = 'Minha Conta';
       if (drawerUserStatus) drawerUserStatus.textContent = 'Banco Local (GitHub Pages)';
+      if (drawerUserAvatarText) drawerUserAvatarText.textContent = '🎓';
       if (drawerAuthBtn) {
         drawerAuthBtn.textContent = 'Entrar';
         drawerAuthBtn.onclick = () => {

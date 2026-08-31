@@ -6,6 +6,7 @@ import { QuizBuilder } from './quizBuilder.js';
 import { AuthManager } from './authManager.js';
 import { RoomManager } from './roomManager.js';
 import { LeaderboardManager } from './leaderboardManager.js';
+import { ThemeManager } from './themeManager.js';
 
 class QuizApp {
   constructor() {
@@ -101,6 +102,7 @@ class QuizApp {
   }
 
   init() {
+    this.themeManager = new ThemeManager(this);
     this.authManager = new AuthManager(this);
     this.quizBuilder = new QuizBuilder(this);
     this.roomManager = new RoomManager(this);
