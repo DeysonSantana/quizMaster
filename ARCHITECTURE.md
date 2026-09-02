@@ -6,29 +6,34 @@ Este documento fornece um guia técnico detalhado para desenvolvedores e **Agent
 
 ## 🎯 1. Visão Geral e Princípios de Design
 
-- **100% Frontend / Serverless**: Não existe backend em Node.js/Python/PHP no servidor da aplicação. A aplicação é hospedada estaticamente no **GitHub Pages**.
-- **Dual-Mode Database (Offline First + Cloud Sync)**:
-  - **Modo Nuvem**: Utiliza **Google Firebase** (Authentication + Cloud Firestore) para sincronização em tempo real multi-dispositivos (PC, celular, tablet).
-  - **Modo Local (Fallback)**: Caso a nuvem não esteja configurada ou o usuário esteja sem internet, opera transparentemente com `LocalStorage` e sintetizadores locais.
-- **Sistema Dinâmico de Temas & Emojis**: Suporta 5 temas visuais (Dark Neon, Light Modern, Emerald, Sunset e Midnight AMOLED) e avatares expressivos com emojis.
-- **Arquitetura Modular ES6**: Todo o código é dividido em módulos com responsabilidade única (`import`/`export`), sem bundlers obrigatórios, permitindo deploy imediato.
+- **100% Offline-First & PWA**: A aplicação funciona completamente sem internet através de um **Service Worker (`sw.js`)** com estratégias *Cache-First* e manifesto PWA (`manifest.json`), podendo ser instalada como app nativo no celular e desktop.
+- **Dual-Mode Database (Offline Local Storage + Cloud Firestore Sync)**:
+  - **Modo Offline**: Quizzes criados são gravados no `LocalStorage` e podem ser baixados em `.json` ou `.csv` para backup físico e transferidos sem internet.
+  - **Modo Nuvem**: Sincronização automática em tempo real com **Google Firebase** (Auth + Firestore).
+- **Recursos Nativos sem Dependência de Internet**:
+  - **Áudio**: Sintetizado via Web Audio API local.
+  - **QR Code**: Gerado em Canvas local de alta densidade (`qrcodeEngine.js`).
+  - **CSV & JSON**: Lidos diretamente via `FileReader` no dispositivo.
 - **Roteamento Baseado em Hash (Hash-based Routing)**: Permite compartilhamento universal de links sem necessidade de reescrita de URL no servidor (`#room=PIN`, `#quiz=PAYLOAD`).
 
 ---
 
-## 🗺️ 2. Mapa de Módulos (`js/`)
+## 🗺️ 2. Mapa de Módulos (`js/` e `sw.js`)
 
 | Arquivo | Responsabilidade | Dependências |
 | :--- | :--- | :--- |
+| `sw.js` | **Service Worker PWA**: Pre-cache dos assets estáticos e cache dinâmico em tempo de execução para funcionamento 100% offline. | Cache Storage API |
+| `manifest.json` | **Manifesto PWA**: Metadados para instalação na tela inicial (*standalone display*). | Navegador |
 | `js/app.js` | **Controlador Central (SPA)**: Gerencia telas (Welcome, Quiz, Results), teclado, ciclo de vida do jogo, timers e eventos globais. | Todos os gerenciadores |
+| `js/offlineManager.js` | **Gerenciador Offline & PWA**: Registro do Service Worker, status de rede (`🟢 Online` / `⚡ Offline`), prompt de instalação e exportação/importação de arquivos `.json`. | `audio.js` |
 | `js/themeManager.js` | **Gerenciador de Temas Visuais**: Aplica e persiste os 5 temas (Dark Neon, Light Modern, Emerald, Sunset, Midnight AMOLED) via variáveis CSS e `LocalStorage`. | `audio.js` |
 | `js/firebaseConfig.js` | **Camada de Dados Serverless**: Inicializa Firebase SDK via CDN ES Modules e provê fallback para `LocalStorage`. | Firebase App, Auth, Firestore |
 | `js/authManager.js` | **Gerenciador de Contas**: Login/Cadastro com Email/Senha, **Google Sign-In** (`GoogleAuthProvider`), perfil, avatar com emoji e estado da sessão. | `firebaseConfig.js`, `audio.js` |
-| `js/quizBuilder.js` | **Criador Visual & Biblioteca de Quizzes**: CRUD de quizzes, temporizador por pergunta, importação CSV/IA e persistência no Firestore (`user_quizzes`). | `shareManager.js`, `csvParser.js`, `aiQuizModal.js`, `firebaseConfig.js` |
+| `js/quizBuilder.js` | **Criador Visual & Biblioteca de Quizzes**: CRUD de quizzes locais, exportação/importação JSON/CSV offline, e persistência no Firestore (`user_quizzes`). | `shareManager.js`, `csvParser.js`, `aiQuizModal.js`, `firebaseConfig.js` |
 | `js/roomManager.js` | **Salas de Desafio (Kahoot)**: Criação de salas, PINs de 6 dígitos, expiração de tempo, listagem e exclusão no Firestore (`quiz_rooms`). | `firebaseConfig.js`, `shareManager.js`, `audio.js` |
 | `js/leaderboardManager.js` | **Ranking e Pódio em Tempo Real**: Entrada por Nickname e Avatar Emoji, escuta ao vivo (`onSnapshot`) em `quiz_rooms/{pin}/scores`, pódio 🥇🥈🥉 e tabela de colocações. | `firebaseConfig.js`, `audio.js` |
-| `js/aiService.js` | **Serviço de I.A**: Conexão com a API do Google Gemini (`gemini-2.5-flash`, `gemini-1.5-flash`) para formulação automática de perguntas em JSON estrito com quantidade aberta (1 a 50+). | Fetch REST API |
-| `js/aiQuizModal.js` | **Interface do Gerador I.A**: Modal interativo com tags de temas, input aberto de quantidade com atalhos rápidos (5, 10, 15, 20, 30, 50) e chave de API. | `aiService.js`, `audio.js` |
+| `js/aiService.js` | **Serviço de I.A**: Conexão com a API do Google Gemini para formulação de perguntas com quantidade aberta (1 a 50+). | Fetch REST API |
+| `js/aiQuizModal.js` | **Interface do Gerador I.A**: Modal interativo com tags de temas, input numérico flexível e chave de API. | `aiService.js`, `audio.js` |
 | `js/shareManager.js` | **Compartilhamento & Encurtador**: Compressão LZ-String, decodificação de URLs, geração de links curtos e renderização de QR Code. | `qrcodeEngine.js` |
 | `js/qrcodeEngine.js` | **Motor Gráfico de QR Code**: Gerador Canvas nativo autônomo (suporta Types 1 a 40) sem dependências externas. | Canvas API |
 | `js/csvParser.js` | **Processamento CSV**: Leitura e validação de arquivos CSV com detecção inteligente de delimitador (`,` ou `;`) e exportação de templates. | FileReader API |
@@ -39,32 +44,7 @@ Este documento fornece um guia técnico detalhado para desenvolvedores e **Agent
 
 ## 📊 3. Modelos de Dados (Data Schemas)
 
-### 3.1. Perfil de Usuário (`UserProfile`)
-Coleção Firestore: `user_profiles` | Chave LocalStorage: `QUIZMASTER_SESSION_USER`
-```typescript
-interface UserProfile {
-  uid: string;
-  name: string;
-  email: string;
-  avatarEmoji: string;      // Ex: '🎓', '🚀', '🧠', '🦁', '🦊', '🤖', etc.
-  provider: 'google' | 'password' | 'local';
-}
-```
-
-### 3.2. Questão (`Question`)
-```typescript
-interface Question {
-  id: number | string;
-  question: string;         // Enunciado da questão
-  category: string;         // Ex: 'História', 'Ciência', 'Geral'
-  difficulty: 'Fácil' | 'Médio' | 'Difícil';
-  options: string[];        // Array com exatamente 4 alternativas [A, B, C, D]
-  correctAnswer: number;    // Índice da alternativa correta (0 a 3)
-  curiosity?: string;       // Explicação didática opcional exibida após a resposta
-}
-```
-
-### 3.3. Quiz (`QuizData`)
+### 3.1. Quiz (`QuizData`)
 Coleção Firestore: `user_quizzes` | Chave LocalStorage: `QUIZMASTER_USER_QUIZZES`
 ```typescript
 interface QuizData {
@@ -78,60 +58,15 @@ interface QuizData {
 }
 ```
 
-### 3.4. Sala de Desafio (`RoomData`)
-Coleção Firestore: `quiz_rooms` | Chave LocalStorage: `QUIZMASTER_LOCAL_ROOMS`
-```typescript
-interface RoomData {
-  pin: string;              // Código numérico de 6 dígitos único (ex: '779967')
-  title: string;            // Título do desafio
-  quizTitle: string;        // Título do quiz vinculado
-  author: string;           // Nome do anfitrião
-  createdAt: string;        // ISO 8601 Timestamp
-  durationMinutes: number;  // Duração (ex: 30, 60, ou null para sem limite)
-  expiresAt: string | null; // ISO 8601 Timestamp de expiração
-  active: boolean;          // Status ativo/inativo
-  questions: Question[];    // Lista de perguntas do desafio
-}
-```
-
-### 3.5. Pontuação do Jogador (`ScoreData`)
-Subcoleção Firestore: `quiz_rooms/{pin}/scores` | Chave LocalStorage: `QUIZMASTER_LOCAL_SCORES`
-```typescript
-interface ScoreData {
-  pin: string;              // PIN da sala
-  nickname: string;         // Nome do aluno/jogador
-  avatarEmoji: string;      // Emoji escolhido pelo jogador (ex: '🚀', '🦊')
-  score: number;            // Pontuação total acumulada
-  accuracy: number;         // Porcentagem de acertos (0 a 100)
-  maxStreak: number;        // Maior sequência de acertos consecutivos
-  submittedAt: string;      // ISO 8601 Timestamp
-}
-```
-
 ---
 
-## 🎨 4. Sistema de Temas e Personalização
+## 📶 4. Como Funciona a Operação Offline
 
-Os temas são controlados pelo atributo `data-theme` na tag `<html>` e classes CSS:
-1. `cyberpunk` (Dark Neon padrão: tons de azul-noite `#0b0f19`, glow índigo e rosa).
-2. `light` (Modo Claro Moderno: fundo `#f8fafc`, cards brancos e tipografia de alto contraste).
-3. `emerald` (Natureza / Esmeralda: fundo `#041610`, tons de menta e esmeralda).
-4. `sunset` (Pôr do Sol Quente: fundo `#140a08`, tons de âmbar, laranja e rosa).
-5. `midnight` (AMOLED Black: fundo `#000000` preto puro e bordas contrastantes).
-
----
-
-## 🤖 5. Guia para Agentes de I.A (Como Continuar o Desenvolvimento)
-
-Ao receber solicitações de novas funcionalidades ou correções:
-
-1. **Manter compatibilidade com GitHub Pages**:
-   - Nunca adicione código que exija um servidor Node.js/Express em tempo de execução.
-   - Use ES Modules com URLs CDN (`https://www.gstatic.com/firebasejs/...` ou `https://cdn.jsdelivr.net/...`).
-2. **Sincronização Nuvem + Local**:
-   - Ao criar novos recursos persistentes, implemente a escrita e leitura simultânea no Firestore e no `LocalStorage`.
-3. **Validação de Sintaxe**:
-   - Sempre execute a verificação de integridade antes de concluir a tarefa:
-     ```powershell
-     Get-ChildItem js\*.js | ForEach-Object { node --check $_.FullName }
-     ```
+1. **Primeiro Acesso**: O `sw.js` faz o download e armazena em cache todos os recursos estáticos e dependências CDN.
+2. **Acessos Seguintes sem Internet**: A página abre instantaneamente do cache local do dispositivo.
+3. **Criação de Quiz Offline**:
+   - O professor pode criar quizzes, adicionar perguntas e salvar no dispositivo.
+   - O quiz é gravado no `LocalStorage` e pode ser jogado imediatamente.
+   - O professor pode clicar em **"Baixar Arquivo (.json)"** para ter uma cópia física de backup.
+4. **Importação Offline**:
+   - No modal "Meus Quizzes", o botão **"Importar Arquivo"** permite carregar qualquer quiz `.json` ou `.csv` salvo no dispositivo sem conexão.

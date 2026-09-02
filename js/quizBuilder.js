@@ -55,7 +55,10 @@ export class QuizBuilder {
       openMyQuizzesBtn: document.getElementById('open-my-quizzes-btn'),
       closeMyQuizzesBtn: document.getElementById('close-my-quizzes-btn'),
       myQuizzesListContainer: document.getElementById('my-quizzes-list-container'),
-      createFirstQuizBtn: document.getElementById('create-first-quiz-btn')
+      createFirstQuizBtn: document.getElementById('create-first-quiz-btn'),
+      importQuizFileBtn: document.getElementById('import-quiz-file-btn'),
+      importQuizFileInput: document.getElementById('import-quiz-file-input'),
+      downloadBuilderJsonBtn: document.getElementById('download-builder-json-btn')
     };
 
     this.init();
@@ -200,6 +203,88 @@ export class QuizBuilder {
     }
     if (this.dom.closeMyQuizzesBtn) {
       this.dom.closeMyQuizzesBtn.addEventListener('click', () => this.closeModal(this.dom.myQuizzesModal));
+    }
+
+    // Baixar Arquivo JSON do Quiz Atual no Construtor
+    if (this.dom.downloadBuilderJsonBtn) {
+      this.dom.downloadBuilderJsonBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        const title = (this.dom.builderTitleInput.value || '').trim() || 'Meu Quiz Offline';
+        const author = (this.dom.builderAuthorInput.value || '').trim() || 'Você';
+        const timerSeconds = this.dom.builderTimerSelect ? parseInt(this.dom.builderTimerSelect.value, 10) : 20;
+        const { questions, error } = this.collectQuestionsFromDOM();
+        
+        if (error) {
+          this.showBuilderError(error);
+          soundFx.playWrong();
+          return;
+        }
+
+        const quizData = {
+          id: this.editingQuizId || 'quiz_' + Date.now(),
+          title: title,
+          author: author,
+          timerSeconds: isNaN(timerSeconds) ? 20 : timerSeconds,
+          updatedAt: new Date().toISOString(),
+          questions: questions
+        };
+
+        if (this.app.offlineManager) {
+          this.app.offlineManager.exportQuizToFile(quizData);
+        }
+      });
+    }
+
+    // Importar Arquivo de Quiz (.json / .csv)
+    if (this.dom.importQuizFileBtn && this.dom.importQuizFileInput) {
+      this.dom.importQuizFileBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.dom.importQuizFileInput.click();
+      });
+
+      this.dom.importQuizFileInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        try {
+          if (file.name.endsWith('.json')) {
+            const parsed = await this.app.offlineManager.importQuizFromFile(file);
+            const quizData = {
+              id: parsed.id || 'quiz_import_' + Date.now(),
+              title: parsed.title || file.name.replace(/\.json$/i, ''),
+              author: parsed.author || 'Importado',
+              timerSeconds: parsed.timerSeconds || 20,
+              updatedAt: new Date().toISOString(),
+              questions: parsed.questions
+            };
+            await this.saveQuizToStorage(quizData);
+            soundFx.playSuccess();
+            alert(`🎉 Quiz "${quizData.title}" com ${quizData.questions.length} perguntas importado e salvo com sucesso no seu dispositivo!`);
+            this.openMyQuizzes();
+          } else if (file.name.endsWith('.csv')) {
+            const parsedQuestions = await parseCSV(file);
+            const quizData = {
+              id: 'quiz_csv_' + Date.now(),
+              title: file.name.replace(/\.csv$/i, ''),
+              author: 'Importado CSV',
+              timerSeconds: 20,
+              updatedAt: new Date().toISOString(),
+              questions: parsedQuestions
+            };
+            await this.saveQuizToStorage(quizData);
+            soundFx.playSuccess();
+            alert(`🎉 Quiz CSV "${quizData.title}" com ${quizData.questions.length} perguntas importado e salvo com sucesso!`);
+            this.openMyQuizzes();
+          } else {
+            alert('Formato de arquivo não suportado. Por favor, selecione um arquivo .json ou .csv.');
+          }
+        } catch (err) {
+          soundFx.playWrong();
+          alert(`Erro ao importar quiz: ${err.message}`);
+        } finally {
+          this.dom.importQuizFileInput.value = '';
+        }
+      });
     }
 
     const openRoomsFromQuizzesBtn = document.getElementById('open-rooms-from-quizzes-btn');
@@ -717,20 +802,26 @@ export class QuizBuilder {
     } else {
       list.forEach(quiz => {
         const item = document.createElement('div');
-        item.className = 'p-4 rounded-2xl bg-gray-900/80 border border-gray-700/60 flex flex-wrap items-center justify-between gap-3';
+        item.className = 'p-4 rounded-2xl bg-gray-900/80 border border-gray-700/60 flex flex-wrap items-center justify-between gap-3 hover:border-indigo-500/40 transition-all';
         item.innerHTML = `
           <div>
-            <h4 class="font-bold text-sm text-gray-100">${this.escapeHtml(quiz.title)}</h4>
+            <div class="flex items-center gap-2">
+              <h4 class="font-bold text-sm text-gray-100">${this.escapeHtml(quiz.title)}</h4>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">⚡ Offline</span>
+            </div>
             <span class="text-xs text-gray-400">${quiz.questions.length} perguntas • Autor: ${this.escapeHtml(quiz.author || 'Você')}</span>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 sm:gap-2">
             <button class="room-quiz-btn px-2.5 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500 hover:text-white border border-amber-500/40 text-xs font-bold transition-all flex items-center gap-1" title="Criar Sala de Desafio (Kahoot)">
               <i data-lucide="trophy" class="w-3.5 h-3.5"></i> Sala
             </button>
-            <button class="play-quiz-btn px-3 py-1.5 rounded-xl bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-500/40 text-xs font-bold transition-all flex items-center gap-1">
+            <button class="play-quiz-btn px-3 py-1.5 rounded-xl bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-500/40 text-xs font-bold transition-all flex items-center gap-1" title="Jogar agora (100% Offline)">
               <i data-lucide="play" class="w-3.5 h-3.5"></i> Jogar
             </button>
-            <button class="share-quiz-btn px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-xs text-indigo-400 font-semibold transition-all flex items-center gap-1">
+            <button class="download-quiz-btn p-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 border border-gray-700 transition-colors" title="Baixar arquivo offline (.json)">
+              <i data-lucide="download" class="w-4 h-4 text-emerald-400"></i>
+            </button>
+            <button class="share-quiz-btn px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-xs text-indigo-400 font-semibold transition-all flex items-center gap-1" title="Compartilhar Link/QR Code">
               <i data-lucide="share-2" class="w-3.5 h-3.5"></i> Link
             </button>
             <button class="edit-quiz-btn p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors" title="Editar">
@@ -741,6 +832,14 @@ export class QuizBuilder {
             </button>
           </div>
         `;
+
+        // Ações de cada quiz salvo
+        item.querySelector('.download-quiz-btn').addEventListener('click', () => {
+          soundFx.playClick();
+          if (this.app.offlineManager) {
+            this.app.offlineManager.exportQuizToFile(quiz);
+          }
+        });
 
         // Ações de cada quiz salvo
         item.querySelector('.room-quiz-btn').addEventListener('click', () => {

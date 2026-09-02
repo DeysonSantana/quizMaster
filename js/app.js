@@ -7,6 +7,7 @@ import { AuthManager } from './authManager.js';
 import { RoomManager } from './roomManager.js';
 import { LeaderboardManager } from './leaderboardManager.js';
 import { ThemeManager } from './themeManager.js';
+import { OfflineManager } from './offlineManager.js';
 
 class QuizApp {
   constructor() {
@@ -60,28 +61,32 @@ class QuizApp {
       finalAccuracy: document.getElementById('final-accuracy'),
       finalStreak: document.getElementById('final-streak'),
       performanceBadge: document.getElementById('performance-badge'),
+      performanceMessage: document.getElementById('performance-message'),
+      performanceDetail: document.getElementById('performance-detail'),
+      feedbackBreakdown: document.getElementById('feedback-breakdown'),
       categoryStatsContainer: document.getElementById('category-stats-container'),
       reviewListContainer: document.getElementById('review-list-container'),
       reviewHeadingText: document.getElementById('review-heading-text'),
+      restartBtn: document.getElementById('restart-btn'),
+      reviewOnlyWrongBtn: document.getElementById('review-only-wrong-btn'),
       
-      // Controls & Buttons
+      // Welcome Screen Controls
       startBtn: document.getElementById('start-btn'),
       startBtnText: document.getElementById('start-btn-text'),
-      restartBtn: document.getElementById('restart-btn'),
-      reviewOnlyWrongBtn: document.getElementById('review-wrong-btn'),
-      soundToggleBtn: document.getElementById('sound-toggle-btn'),
-      timerToggleCheckbox: document.getElementById('timer-toggle-checkbox'),
       welcomeTimerSelect: document.getElementById('welcome-timer-select'),
-
-      // CSV & Share Controls
-      dropZone: document.getElementById('drop-zone'),
+      joinRoomBtn: document.getElementById('join-room-btn'),
+      roomPinInput: document.getElementById('room-pin-input'),
+      pinFeedback: document.getElementById('pin-feedback'),
+      soundToggleBtn: document.getElementById('sound-toggle-btn'),
+      themeToggleBtn: document.getElementById('theme-toggle-btn'),
       csvFileInput: document.getElementById('csv-file-input'),
+      uploadBtn: document.getElementById('upload-btn'),
       downloadTemplateBtn: document.getElementById('download-template-btn'),
-      quizSourceLabel: document.getElementById('quiz-source-label'),
       resetDefaultQuizBtn: document.getElementById('reset-default-quiz-btn'),
       shareCSVQuizBtn: document.getElementById('share-csv-quiz-btn'),
+      quizSourceLabel: document.getElementById('quiz-source-label'),
       uploadFeedback: document.getElementById('upload-feedback'),
-
+      
       // Mobile Aside Drawer Controls
       mobileMenuToggleBtn: document.getElementById('mobile-menu-toggle-btn'),
       closeMobileDrawerBtn: document.getElementById('close-mobile-drawer-btn'),
@@ -102,6 +107,7 @@ class QuizApp {
   }
 
   init() {
+    this.offlineManager = new OfflineManager(this);
     this.themeManager = new ThemeManager(this);
     this.authManager = new AuthManager(this);
     this.quizBuilder = new QuizBuilder(this);
