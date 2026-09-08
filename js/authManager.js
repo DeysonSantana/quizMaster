@@ -329,7 +329,16 @@ export class AuthManager {
       this.notifyListeners();
     } catch (err) {
       console.error('Erro no login com Google:', err);
-      this.showAuthError(`❌ ${err.message}`);
+      let errorMsg = err.message;
+      if (err.code === 'auth/unauthorized-domain') {
+        const currentHost = window.location.hostname;
+        errorMsg = `O domínio "${currentHost}" precisa ser autorizado no Console do Firebase (Authentication ➔ Configurações ➔ Domínios Autorizados).`;
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        errorMsg = 'A janela de login com o Google foi fechada antes de concluir.';
+      } else if (err.code === 'auth/popup-blocked') {
+        errorMsg = 'O pop-up de login foi bloqueado pelo seu navegador. Permita pop-ups para este site.';
+      }
+      this.showAuthError(`❌ ${errorMsg}`);
       soundFx.playWrong();
     }
   }
