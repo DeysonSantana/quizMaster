@@ -150,16 +150,16 @@ Lembre-se: Todas as perguntas devem ter 4 alternativas sem pegadinhas inúteis e
     }
 
     if (this.provider === 'gemini') {
-      return await this.callGeminiWithFallback(systemInstruction, userPrompt);
+      return await this.callGeminiWithFallback(systemInstruction, userPrompt, format);
     } else {
-      return await this.callOpenAICompatibleAPI(systemInstruction, userPrompt);
+      return await this.callOpenAICompatibleAPI(systemInstruction, userPrompt, format);
     }
   }
 
   /**
    * Chamada resiliente à API do Google Gemini com teste automático de modelos
    */
-  async callGeminiWithFallback(systemInstruction, userPrompt) {
+  async callGeminiWithFallback(systemInstruction, userPrompt, format = 'multiple_choice') {
     // 1. Se já sabemos um modelo que funciona nesta sessão, tenta ele primeiro
     const modelsToTry = this.cachedWorkingModel 
       ? [this.cachedWorkingModel, ...GEMINI_CANDIDATE_MODELS.filter(m => m !== this.cachedWorkingModel)]
@@ -181,7 +181,7 @@ Lembre-se: Todas as perguntas devem ter 4 alternativas sem pegadinhas inúteis e
     for (const model of modelsToTry) {
       try {
         console.log(`Tentando gerar quiz com o modelo Gemini: ${model}...`);
-        const result = await this.trySingleGeminiModel(model, systemInstruction, userPrompt);
+        const result = await this.trySingleGeminiModel(model, systemInstruction, userPrompt, format);
         this.cachedWorkingModel = model;
         console.log(`Sucesso com o modelo Gemini: ${model}`);
         return result;
@@ -217,7 +217,7 @@ Lembre-se: Todas as perguntas devem ter 4 alternativas sem pegadinhas inúteis e
   /**
    * Executa a requisição para um modelo Gemini específico
    */
-  async trySingleGeminiModel(model, systemInstruction, userPrompt) {
+  async trySingleGeminiModel(model, systemInstruction, userPrompt, format = 'multiple_choice') {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(this.apiKey)}`;
 
     const body = {
@@ -257,13 +257,13 @@ Lembre-se: Todas as perguntas devem ter 4 alternativas sem pegadinhas inúteis e
       throw new Error('A I.A não retornou uma resposta válida.');
     }
 
-    return this.parseAndValidateQuizResponse(textOutput);
+    return this.parseAndValidateQuizResponse(textOutput, format);
   }
 
   /**
    * Chamada à API compatível com OpenAI (OpenAI, Groq, Ollama)
    */
-  async callOpenAICompatibleAPI(systemInstruction, userPrompt) {
+  async callOpenAICompatibleAPI(systemInstruction, userPrompt, format = 'multiple_choice') {
     const url = 'https://api.openai.com/v1/chat/completions';
 
     const body = {
@@ -298,13 +298,13 @@ Lembre-se: Todas as perguntas devem ter 4 alternativas sem pegadinhas inúteis e
       throw new Error('A I.A não retornou nenhuma resposta.');
     }
 
-    return this.parseAndValidateQuizResponse(textOutput);
+    return this.parseAndValidateQuizResponse(textOutput, format);
   }
 
   /**
    * Faz o parse seguro do JSON e normaliza os dados retornados pela I.A
    */
-  parseAndValidateQuizResponse(jsonString) {
+  parseAndValidateQuizResponse(jsonString, requestedFormat = 'multiple_choice') {
     let cleanJson = jsonString.trim();
     if (cleanJson.startsWith('```json')) {
       cleanJson = cleanJson.replace(/^```json/, '').replace(/```$/, '').trim();
@@ -327,26 +327,53 @@ Lembre-se: Todas as perguntas devem ter 4 alternativas sem pegadinhas inúteis e
     }
 
     const validatedQuestions = questionsRaw.map((q, idx) => {
-      let correctIdx = typeof q.correctAnswer === 'number' ? q.correctAnswer : 0;
-      if (typeof q.correctAnswer === 'string') {
-        const letter = q.correctAnswer.trim().toUpperCase();
-        if (letter === 'A' || letter === '1') correctIdx = 0;
-        else if (letter === 'B' || letter === '2') correctIdx = 1;
-        else if (letter === 'C' || letter === '3') correctIdx = 2;
-        else if (letter === 'D' || letter === '4') correctIdx = 3;
+      // 1. Detecta se a questão é Fato ou Fake
+      const isFactFake = requestedFormat === 'fact_fake' || 
+                         q.type === 'fact_fake' || 
+                         q.type === 'boolean' || 
+                         (Array.isArray(q.options) && q.options.length === 2);
+
+      let correctIdx = 0;
+      if (typeof q.correctAnswer === 'number') {
+        correctIdx = q.correctAnswer;
+      } else if (typeof q.correctAnswer === 'string') {
+        const clean = q.correctAnswer.trim().toUpperCase();
+        if (clean === 'FATO' || clean === 'VERDADEIRO' || clean === 'V' || clean === 'TRUE' || clean === 'A' || clean === '0') {
+          correctIdx = 0;
+        } else if (clean === 'FAKE' || clean === 'FALSO' || clean === 'F' || clean === 'FALSE' || clean === 'B' || clean === '1') {
+          correctIdx = 1;
+        } else if (clean === 'C' || clean === '2') {
+          correctIdx = 2;
+        } else if (clean === 'D' || clean === '3') {
+          correctIdx = 3;
+        }
       }
 
-      return {
-        id: idx + 1,
-        question: q.question || `Pergunta #${idx + 1}`,
-        category: q.category || 'Geral',
-        difficulty: q.difficulty || 'Médio',
-        options: Array.isArray(q.options) && q.options.length >= 4 
-          ? q.options.slice(0, 4) 
-          : ['Opção A', 'Opção B', 'Opção C', 'Opção D'],
-        correctAnswer: Math.max(0, Math.min(3, correctIdx)),
-        curiosity: q.curiosity || 'Explicação didática gerada por Inteligência Artificial.'
-      };
+      if (isFactFake) {
+        return {
+          id: idx + 1,
+          type: 'fact_fake',
+          question: q.question || `Afirmação #${idx + 1}`,
+          category: q.category || 'Geral',
+          difficulty: q.difficulty || 'Médio',
+          options: (Array.isArray(q.options) && q.options.length === 2) ? q.options : ['Fato', 'Fake'],
+          correctAnswer: correctIdx === 1 ? 1 : 0,
+          curiosity: q.curiosity || 'Explicação didática gerada por Inteligência Artificial.'
+        };
+      } else {
+        return {
+          id: idx + 1,
+          type: 'multiple_choice',
+          question: q.question || `Pergunta #${idx + 1}`,
+          category: q.category || 'Geral',
+          difficulty: q.difficulty || 'Médio',
+          options: Array.isArray(q.options) && q.options.length >= 4 
+            ? q.options.slice(0, 4) 
+            : (Array.isArray(q.options) && q.options.length > 0 ? q.options : ['Opção A', 'Opção B', 'Opção C', 'Opção D']),
+          correctAnswer: Math.max(0, Math.min(3, correctIdx)),
+          curiosity: q.curiosity || 'Explicação didática gerada por Inteligência Artificial.'
+        };
+      }
     });
 
     return {
