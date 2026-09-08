@@ -50,6 +50,7 @@ export class AuthManager {
       profileEmojiGrid: document.getElementById('profile-emoji-grid'),
       profileThemeBtn: document.getElementById('profile-theme-btn'),
       logoutBtn: document.getElementById('profile-logout-btn'),
+      deleteAccountBtn: document.getElementById('profile-delete-account-btn'),
       openCloudConfigBtn: document.getElementById('open-cloud-config-btn'),
       drawerUserAvatarText: document.getElementById('drawer-user-avatar-text'),
 
@@ -177,6 +178,13 @@ export class AuthManager {
       this.dom.logoutBtn.addEventListener('click', async () => {
         soundFx.playClick();
         await this.logout();
+      });
+    }
+
+    // Excluir Conta Permanentemente
+    if (this.dom.deleteAccountBtn) {
+      this.dom.deleteAccountBtn.addEventListener('click', async () => {
+        await this.handleDeleteAccount();
       });
     }
 
@@ -442,6 +450,68 @@ export class AuthManager {
     this.closeProfileModal();
     this.updateUI();
     this.notifyListeners();
+  }
+
+  async handleDeleteAccount() {
+    if (!this.currentUser) return;
+
+    const userEmail = this.currentUser.email || 'sua conta';
+    const confirmed = confirm(
+      `⚠️ ATENÇÃO: Tem certeza que deseja excluir permanentemente sua conta (${userEmail})?\n\nEsta ação é irreversível e todos os seus dados de perfil serão removidos.`
+    );
+    if (!confirmed) return;
+
+    soundFx.playClick();
+
+    try {
+      const uid = this.currentUser.uid;
+      const isFirebase = this.currentUser.provider === 'firebase' || this.currentUser.provider === 'google';
+
+      // 1. Exclusão no Firebase (Auth + Firestore)
+      if (isFirebase && serverlessDB.isCloudEnabled && serverlessDB.auth) {
+        const firebaseUser = serverlessDB.auth.currentUser;
+        if (firebaseUser) {
+          // Remove documento de perfil do Firestore
+          if (serverlessDB.firestore) {
+            try {
+              const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+              await deleteDoc(doc(serverlessDB.firestore, 'user_profiles', uid));
+            } catch (e) {
+              console.warn('Erro ao remover documento de perfil do Firestore:', e);
+            }
+          }
+
+          // Exclui a conta do Firebase Auth
+          try {
+            await firebaseUser.delete();
+          } catch (authErr) {
+            if (authErr.code === 'auth/requires-recent-login') {
+              alert('⚠️ Por medidas de segurança, faça login novamente na sua conta antes de solicitar a exclusão.');
+              await this.logout();
+              this.openAuthModal();
+              return;
+            }
+            throw authErr;
+          }
+        }
+      } else {
+        // 2. Exclusão no Banco Local (LocalStorage)
+        const localUsers = serverlessDB.getLocalUsers().filter(u => u.uid !== uid && u.email.toLowerCase() !== this.currentUser.email.toLowerCase());
+        serverlessDB.saveLocalUsers(localUsers);
+      }
+
+      // 3. Limpa sessão local e atualiza interface
+      this.currentUser = null;
+      this.saveSessionUser(null);
+      this.closeProfileModal();
+      this.updateUI();
+      this.notifyListeners();
+      soundFx.playSuccess();
+      alert('✅ Sua conta foi excluída permanentemente com sucesso.');
+    } catch (err) {
+      soundFx.playWrong();
+      alert(`❌ Erro ao excluir conta: ${err.message}`);
+    }
   }
 
   openProfileModal() {
