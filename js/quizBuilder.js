@@ -488,39 +488,51 @@ export class QuizBuilder {
     const card = document.createElement('div');
     card.className = 'p-3.5 sm:p-5 rounded-2xl bg-gray-900/80 border border-gray-700/70 space-y-3.5 sm:space-y-4 relative question-builder-item';
     
+    const isFactFake = data && (data.type === 'fact_fake' || data.type === 'boolean' || (Array.isArray(data.options) && data.options.length === 2));
     const questionText = data ? data.question : '';
     const category = data ? data.category : 'Geral';
     const difficulty = data ? data.difficulty : 'Fácil';
-    const options = data ? data.options : ['', '', '', ''];
-    const correctAnswer = data ? data.correctAnswer : 0;
+    const options = (data && data.options && data.options.length >= 4) ? data.options : ['', '', '', ''];
+    const correctAnswer = data ? (typeof data.correctAnswer === 'number' ? data.correctAnswer : 0) : 0;
     const curiosity = data ? (data.curiosity || '') : '';
 
     const uniqueRadioName = `correct_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     card.innerHTML = `
-      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
-        <span class="font-bold text-sm text-indigo-400 flex items-center gap-2">
+      <div class="flex flex-wrap items-center justify-between border-b border-gray-800 pb-3 gap-2">
+        <div class="flex items-center gap-2">
           <span class="w-6 h-6 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center text-xs font-bold q-num">
             ${qIndex}
           </span>
-          Pergunta
-        </span>
-        <button type="button" class="text-xs text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-950/30 delete-q-btn transition-colors" title="Excluir Pergunta">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-        </button>
+          <span class="font-bold text-sm text-white">Pergunta</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Seletor de Formato: Múltipla Escolha vs Fato ou Fake -->
+          <select class="q-type-select px-2.5 py-1.5 rounded-xl bg-gray-800 border border-gray-700 text-xs font-semibold text-indigo-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+            <option value="multiple_choice" ${!isFactFake ? 'selected' : ''}>🔘 Múltipla Escolha (4 Opções)</option>
+            <option value="fact_fake" ${isFactFake ? 'selected' : ''}>⚡ Fato ou Fake (Verdadeiro / Falso)</option>
+          </select>
+
+          <button type="button" class="text-xs text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-950/30 delete-q-btn transition-colors" title="Excluir Pergunta">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- Enunciado -->
+      <!-- Enunciado / Frase -->
       <div>
-        <label class="block text-xs font-semibold text-gray-300 mb-1">Enunciado da Pergunta *</label>
-        <input type="text" class="q-text-input w-full px-3.5 py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="Ex: Qual é a capital do Brasil?" value="${this.escapeHtml(questionText)}" required />
+        <label class="block text-xs font-semibold text-gray-300 mb-1 q-statement-label">
+          ${isFactFake ? 'Frase ou Afirmação para Julgar *' : 'Enunciado da Pergunta *'}
+        </label>
+        <input type="text" class="q-text-input w-full px-3.5 py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-sm text-gray-100 placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="${isFactFake ? 'Ex: O Sol é uma estrela de tamanho médio no universo.' : 'Ex: Qual é a capital do Brasil?'}" value="${this.escapeHtml(questionText)}" required />
       </div>
 
       <!-- Categoria e Dificuldade -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="block text-xs font-semibold text-gray-300 mb-1">Categoria / Matéria</label>
-          <input type="text" class="q-category-input w-full px-3 py-2 rounded-xl bg-gray-800/80 border border-gray-700 text-xs text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Ex: Geografia, Matemática, História" value="${this.escapeHtml(category)}" />
+          <input type="text" class="q-category-input w-full px-3 py-2 rounded-xl bg-gray-800/80 border border-gray-700 text-xs text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Ex: Geografia, Ciência, História" value="${this.escapeHtml(category)}" />
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-300 mb-1">Dificuldade</label>
@@ -532,24 +544,38 @@ export class QuizBuilder {
         </div>
       </div>
 
-      <!-- 4 Alternativas com Seleção da Correta -->
-      <div class="space-y-2">
+      <!-- Bloco 1: 4 Alternativas (Múltipla Escolha) -->
+      <div class="multiple-choice-container space-y-2 ${isFactFake ? 'hidden' : ''}">
         <label class="block text-xs font-semibold text-gray-300">Alternativas (Selecione o botão da resposta correta):</label>
         ${['A', 'B', 'C', 'D'].map((letter, optIdx) => `
           <div class="flex items-center gap-2">
-            <label class="flex items-center gap-1.5 cursor-pointer px-2.5 py-2 rounded-xl border ${correctAnswer === optIdx ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 font-bold' : 'bg-gray-800/60 border-gray-700 text-gray-400'} text-xs radio-label transition-colors">
-              <input type="radio" name="${uniqueRadioName}" value="${optIdx}" ${correctAnswer === optIdx ? 'checked' : ''} class="hidden correct-radio" />
+            <label class="flex items-center gap-1.5 cursor-pointer px-2.5 py-2 rounded-xl border ${(!isFactFake && correctAnswer === optIdx) ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 font-bold' : 'bg-gray-800/60 border-gray-700 text-gray-400'} text-xs radio-label transition-colors">
+              <input type="radio" name="${uniqueRadioName}" value="${optIdx}" ${(!isFactFake && correctAnswer === optIdx) ? 'checked' : ''} class="hidden correct-radio" />
               <span>${letter}</span>
             </label>
-            <input type="text" class="opt-input w-full px-3 py-2 rounded-xl bg-gray-800/80 border border-gray-700 text-xs text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Opção ${letter}" value="${this.escapeHtml(options[optIdx] || '')}" required />
+            <input type="text" class="opt-input w-full px-3 py-2 rounded-xl bg-gray-800/80 border border-gray-700 text-xs text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Opção ${letter}" value="${this.escapeHtml(options[optIdx] || '')}" />
           </div>
         `).join('')}
       </div>
 
+      <!-- Bloco 2: Fato ou Fake (Binário) -->
+      <div class="fact-fake-container space-y-2 ${isFactFake ? '' : 'hidden'}">
+        <label class="block text-xs font-semibold text-gray-300">Gabarito da Afirmação (Selecione a resposta certa):</label>
+        <input type="hidden" class="correct-fact-fake-value" value="${isFactFake ? (correctAnswer === 1 ? 1 : 0) : 0}" />
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button" class="btn-select-fact p-3 rounded-xl border font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${isFactFake && correctAnswer === 0 ? 'bg-emerald-600/30 border-emerald-500 text-emerald-300 shadow-md shadow-emerald-600/20 ring-2 ring-emerald-500' : 'bg-gray-800/60 border-gray-700 text-gray-400 hover:bg-gray-700'}">
+            <span>✅ É FATO</span>
+          </button>
+          <button type="button" class="btn-select-fake p-3 rounded-xl border font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${isFactFake && correctAnswer === 1 ? 'bg-rose-600/30 border-rose-500 text-rose-300 shadow-md shadow-rose-600/20 ring-2 ring-rose-500' : 'bg-gray-800/60 border-gray-700 text-gray-400 hover:bg-gray-700'}">
+            <span>❌ É FAKE</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Curiosidade Didática -->
       <div>
-        <label class="block text-xs font-semibold text-gray-300 mb-1">💡 Curiosidade Didática (Opcional)</label>
-        <input type="text" class="q-curiosity-input w-full px-3 py-2 rounded-xl bg-gray-800/80 border border-gray-700 text-xs text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Breve explicação ou curiosidade que aparece após a resposta" value="${this.escapeHtml(curiosity)}" />
+        <label class="block text-xs font-semibold text-gray-300 mb-1">💡 Curiosidade / Explicação Didática (Opcional)</label>
+        <input type="text" class="q-curiosity-input w-full px-3 py-2 rounded-xl bg-gray-800/80 border border-gray-700 text-xs text-gray-100 placeholder-gray-500 focus:border-indigo-500" placeholder="Breve explicação que aparece ao responder" value="${this.escapeHtml(curiosity)}" />
       </div>
     `;
 
@@ -565,7 +591,48 @@ export class QuizBuilder {
       this.updateQuestionCount();
     });
 
-    // Mudança de resposta correta
+    // Alternar Tipo de Pergunta (Múltipla Escolha vs Fato/Fake)
+    const typeSelect = card.querySelector('.q-type-select');
+    const mcContainer = card.querySelector('.multiple-choice-container');
+    const ffContainer = card.querySelector('.fact-fake-container');
+    const statementLabel = card.querySelector('.q-statement-label');
+    const textInput = card.querySelector('.q-text-input');
+
+    typeSelect.addEventListener('change', () => {
+      const isFF = typeSelect.value === 'fact_fake';
+      if (isFF) {
+        mcContainer.classList.add('hidden');
+        ffContainer.classList.remove('hidden');
+        statementLabel.textContent = 'Frase ou Afirmação para Julgar *';
+        textInput.placeholder = 'Ex: O Sol é uma estrela de tamanho médio no universo.';
+      } else {
+        mcContainer.classList.remove('hidden');
+        ffContainer.classList.add('hidden');
+        statementLabel.textContent = 'Enunciado da Pergunta *';
+        textInput.placeholder = 'Ex: Qual é a capital do Brasil?';
+      }
+    });
+
+    // Botões Fato vs Fake
+    const btnFact = card.querySelector('.btn-select-fact');
+    const btnFake = card.querySelector('.btn-select-fake');
+    const hiddenFFValue = card.querySelector('.correct-fact-fake-value');
+
+    btnFact.addEventListener('click', () => {
+      soundFx.playClick();
+      hiddenFFValue.value = '0';
+      btnFact.className = 'btn-select-fact p-3 rounded-xl border font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600/30 border-emerald-500 text-emerald-300 shadow-md shadow-emerald-600/20 ring-2 ring-emerald-500';
+      btnFake.className = 'btn-select-fake p-3 rounded-xl border font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all bg-gray-800/60 border-gray-700 text-gray-400 hover:bg-gray-700';
+    });
+
+    btnFake.addEventListener('click', () => {
+      soundFx.playClick();
+      hiddenFFValue.value = '1';
+      btnFake.className = 'btn-select-fake p-3 rounded-xl border font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all bg-rose-600/30 border-rose-500 text-rose-300 shadow-md shadow-rose-600/20 ring-2 ring-rose-500';
+      btnFact.className = 'btn-select-fact p-3 rounded-xl border font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all bg-gray-800/60 border-gray-700 text-gray-400 hover:bg-gray-700';
+    });
+
+    // Mudança de resposta correta na Múltipla Escolha
     const radios = card.querySelectorAll('.correct-radio');
     const radioLabels = card.querySelectorAll('.radio-label');
     radios.forEach((radio, rIdx) => {
@@ -592,22 +659,20 @@ export class QuizBuilder {
     });
   }
 
-  saveAndShareQuiz() {
-    const title = this.dom.builderTitleInput.value.trim() || 'Meu Quiz Personalizado';
-    const author = this.dom.builderAuthorInput.value.trim() || 'Criador';
+  collectQuestionsFromDOM() {
     const cardElements = this.dom.builderQuestionsContainer.querySelectorAll('.question-builder-item');
-
     const questions = [];
-    let validationError = null;
+    let error = null;
 
     if (cardElements.length === 0) {
-      this.showBuilderError('Adicione pelo menos 1 pergunta ao quiz.');
-      soundFx.playWrong();
-      return;
+      return { questions: [], error: 'Adicione pelo menos 1 pergunta ao quiz.' };
     }
 
     cardElements.forEach((card, idx) => {
-      if (validationError) return;
+      if (error) return;
+
+      const qTypeSelect = card.querySelector('.q-type-select');
+      const qType = qTypeSelect ? qTypeSelect.value : 'multiple_choice';
 
       const qTextInput = card.querySelector('.q-text-input');
       const qText = qTextInput ? qTextInput.value.trim() : '';
@@ -618,36 +683,60 @@ export class QuizBuilder {
       const curInput = card.querySelector('.q-curiosity-input');
       const curiosity = curInput && curInput.value.trim() ? curInput.value.trim() : 'Resposta correta registrada!';
 
-      const optInputs = card.querySelectorAll('.opt-input');
-      const options = Array.from(optInputs).map(input => input.value.trim());
-
-      const checkedRadio = card.querySelector('.correct-radio:checked');
-      const correctAnswer = checkedRadio ? parseInt(checkedRadio.value, 10) : 0;
-
       if (!qText) {
-        validationError = `A pergunta #${idx + 1} precisa de um enunciado.`;
+        error = `A pergunta #${idx + 1} precisa de um enunciado.`;
         if (qTextInput) qTextInput.focus();
         return;
       }
 
-      if (options.some(opt => !opt)) {
-        validationError = `A pergunta #${idx + 1} precisa de todas as 4 alternativas preenchidas.`;
-        return;
-      }
+      if (qType === 'fact_fake') {
+        const hiddenFFValue = card.querySelector('.correct-fact-fake-value');
+        const correctAnswer = hiddenFFValue ? parseInt(hiddenFFValue.value, 10) : 0;
 
-      questions.push({
-        id: idx + 1,
-        question: qText,
-        category: category,
-        difficulty: difficulty,
-        options: options,
-        correctAnswer: isNaN(correctAnswer) ? 0 : correctAnswer,
-        curiosity: curiosity
-      });
+        questions.push({
+          id: idx + 1,
+          type: 'fact_fake',
+          question: qText,
+          category: category,
+          difficulty: difficulty,
+          options: ['Fato', 'Fake'],
+          correctAnswer: correctAnswer === 1 ? 1 : 0,
+          curiosity: curiosity
+        });
+      } else {
+        const optInputs = card.querySelectorAll('.opt-input');
+        const options = Array.from(optInputs).map(input => input.value.trim());
+        const checkedRadio = card.querySelector('.correct-radio:checked');
+        const correctAnswer = checkedRadio ? parseInt(checkedRadio.value, 10) : 0;
+
+        if (options.some(opt => !opt)) {
+          error = `A pergunta #${idx + 1} precisa de todas as 4 alternativas preenchidas.`;
+          return;
+        }
+
+        questions.push({
+          id: idx + 1,
+          type: 'multiple_choice',
+          question: qText,
+          category: category,
+          difficulty: difficulty,
+          options: options,
+          correctAnswer: isNaN(correctAnswer) ? 0 : correctAnswer,
+          curiosity: curiosity
+        });
+      }
     });
 
-    if (validationError) {
-      this.showBuilderError(validationError);
+    return { questions, error };
+  }
+
+  saveAndShareQuiz() {
+    const title = this.dom.builderTitleInput.value.trim() || 'Meu Quiz Personalizado';
+    const author = this.dom.builderAuthorInput.value.trim() || 'Criador';
+    
+    const { questions, error } = this.collectQuestionsFromDOM();
+    if (error) {
+      this.showBuilderError(error);
       soundFx.playWrong();
       return;
     }

@@ -47,12 +47,81 @@ export class AIService {
   /**
    * Gera um conjunto de perguntas usando a I.A selecionada
    */
-  async generateQuiz({ topic, baseText, count = 5, difficulty = 'Misto', category = 'Geral' }) {
+  async generateQuiz({ topic, baseText, count = 5, difficulty = 'Misto', format = 'multiple_choice', category = 'Geral' }) {
     if (!this.apiKey) {
       throw new Error('Por favor, informe sua chave de API para utilizar a I.A.');
     }
 
-    const systemInstruction = `Você é um Especialista em Gamificação Educacional e Quizmaster Sênior. 
+    let systemInstruction = '';
+    let userPrompt = '';
+
+    if (format === 'fact_fake') {
+      systemInstruction = `Você é um Especialista em Gamificação Educacional e Quizmaster Sênior. 
+Seu objetivo é criar um quiz interativo no formato "FATO OU FAKE" (Verdadeiro ou Falso / Mitos e Fatos).
+Cada item deve ser uma frase ou afirmação provocativa, instigante e clara, na qual o estudante precisa decidir se é FATO (verdadeiro) ou FAKE (mito/falso).
+Para cada questão:
+- "question": "A afirmação/frase para avaliar (sem dar a resposta no texto)"
+- "type": "fact_fake"
+- "options": ["Fato", "Fake"]
+- "correctAnswer": 0 (se for Fato/Verdadeiro) ou 1 (se for Fake/Falso)
+- "curiosity": "Explicação científica, factual ou histórica de 1 a 2 frases comprovando a verdade ou desmistificando a mentira."
+
+Você DEVE responder ESTRITAMENTE em formato JSON puro no seguinte formato:
+{
+  "title": "Título instigante para o Quiz Fato ou Fake",
+  "author": "I.A QuizMaster",
+  "questions": [
+    {
+      "question": "Texto da afirmação a ser julgada?",
+      "type": "fact_fake",
+      "category": "Nome da Categoria/Matéria",
+      "difficulty": "Fácil|Médio|Difícil",
+      "options": ["Fato", "Fake"],
+      "correctAnswer": 0,
+      "curiosity": "Explicação detalhada comprovando o fato ou desmentindo o fake."
+    }
+  ]
+}`;
+
+      userPrompt = `Crie exatamente ${count} afirmações de FATO OU FAKE.
+Tema principal: ${topic}
+${baseText ? `\nTexto base de referência:\n"""\n${baseText}\n"""\n` : ''}
+Nível de dificuldade solicitado: ${difficulty} (Se for Misto, faça progressão: afirmações fáceis no começo e mitos mais sutis no final).
+Categoria padrão: ${category}
+Equilibre entre fatos reais surpreendentes (correctAnswer: 0) e mitos populares comuns (correctAnswer: 1).`;
+
+    } else if (format === 'mixed') {
+      systemInstruction = `Você é um Especialista em Gamificação Educacional e Quizmaster Sênior. 
+Seu objetivo é criar um quiz variado contendo tanto perguntas de MÚLTIPLA ESCOLHA (4 alternativas) quanto afirmações de FATO OU FAKE (2 opções).
+Para perguntas de Múltipla Escolha: "type": "multiple_choice", "options": ["A", "B", "C", "D"], "correctAnswer": 0..3.
+Para afirmações de Fato ou Fake: "type": "fact_fake", "options": ["Fato", "Fake"], "correctAnswer": 0 (Fato) ou 1 (Fake).
+
+Você DEVE responder ESTRITAMENTE em formato JSON puro no seguinte formato:
+{
+  "title": "Título criativo para o Quiz",
+  "author": "I.A QuizMaster",
+  "questions": [
+    {
+      "question": "Texto da pergunta ou afirmação",
+      "type": "multiple_choice|fact_fake",
+      "category": "Nome da Categoria/Matéria",
+      "difficulty": "Fácil|Médio|Difícil",
+      "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
+      "correctAnswer": 0,
+      "curiosity": "Curiosidade didática de 1 ou 2 frases explicando o contexto."
+    }
+  ]
+}`;
+
+      userPrompt = `Crie exatamente ${count} questões mesclando perguntas de Múltipla Escolha e afirmações de Fato ou Fake.
+Tema principal: ${topic}
+${baseText ? `\nTexto base de referência:\n"""\n${baseText}\n"""\n` : ''}
+Nível de dificuldade: ${difficulty}.
+Categoria padrão: ${category}.`;
+
+    } else {
+      // Padrão: Múltipla Escolha (4 Alternativas)
+      systemInstruction = `Você é um Especialista em Gamificação Educacional e Quizmaster Sênior. 
 Seu objetivo é criar um quiz educativo, instigante, sem ambiguidades e com 4 alternativas por questão (A, B, C, D), indicando o índice da resposta correta (0 para A, 1 para B, 2 para C, 3 para D) e uma breve pílula de curiosidade didática de 1 a 2 frases para cada pergunta.
 
 Você DEVE responder ESTRITAMENTE em formato JSON puro no seguinte formato:
@@ -62,6 +131,7 @@ Você DEVE responder ESTRITAMENTE em formato JSON puro no seguinte formato:
   "questions": [
     {
       "question": "Texto da pergunta?",
+      "type": "multiple_choice",
       "category": "Nome da Categoria/Matéria",
       "difficulty": "Fácil|Médio|Difícil",
       "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
@@ -71,12 +141,13 @@ Você DEVE responder ESTRITAMENTE em formato JSON puro no seguinte formato:
   ]
 }`;
 
-    const userPrompt = `Crie exatamente ${count} perguntas de múltipla escolha.
+      userPrompt = `Crie exatamente ${count} perguntas de múltipla escolha.
 Tema principal: ${topic}
 ${baseText ? `\nTexto base de referência:\n"""\n${baseText}\n"""\n` : ''}
 Nível de dificuldade solicitado: ${difficulty} (Se for Misto, faça progressão: perguntas iniciais Fáceis, intermediárias Médias e finais Difíceis).
 Categoria padrão: ${category}
 Lembre-se: Todas as perguntas devem ter 4 alternativas sem pegadinhas inúteis e com uma curiosidade explicativa.`;
+    }
 
     if (this.provider === 'gemini') {
       return await this.callGeminiWithFallback(systemInstruction, userPrompt);

@@ -208,12 +208,17 @@ class QuizApp {
       });
     }
 
-    // Atalhos de teclado (A, B, C, D ou 1, 2, 3, 4, Enter)
+    // Atalhos de teclado (A, B, C, D ou 1, 2, 3, 4 ou V, F, Enter)
     window.addEventListener('keydown', (e) => {
       const activeScreen = this.getActiveScreen();
       if (activeScreen === 'quiz') {
         const key = e.key.toUpperCase();
-        const keyMap = { 'A': 0, '1': 0, 'B': 1, '2': 1, 'C': 2, '3': 2, 'D': 3, '4': 3 };
+        const keyMap = { 
+          'A': 0, '1': 0, 'V': 0, 
+          'B': 1, '2': 1, 'F': 1, 
+          'C': 2, '3': 2, 
+          'D': 3, '4': 3 
+        };
         
         if (key in keyMap) {
           const optionButtons = this.dom.optionsContainer.querySelectorAll('button');
@@ -589,28 +594,65 @@ class QuizApp {
     // Categoria Badge styling
     this.dom.categoryBadge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
 
-    // Texto da pergunta
+    // Texto da pergunta / Frase para avaliar
     this.dom.questionText.textContent = q.question;
+
+    // Detecta se é pergunta binária (Fato ou Fake / Verdadeiro ou Falso)
+    const isBinaryType = (q.options && q.options.length === 2) || q.type === 'boolean' || q.type === 'fact_fake';
 
     // Renderiza Alternativas
     this.dom.optionsContainer.innerHTML = '';
-    const letters = ['A', 'B', 'C', 'D'];
 
-    q.options.forEach((opt, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'quiz-option w-full p-4 rounded-xl text-left font-medium text-gray-200 border border-gray-700/70 bg-gray-800/60 hover:bg-gray-700/60 flex items-center justify-between group shadow-sm';
-      btn.innerHTML = `
-        <div class="flex items-center gap-3.5">
-          <span class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm bg-gray-700/80 text-gray-300 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-            ${letters[idx] || (idx + 1)}
-          </span>
-          <span class="text-base font-medium">${opt}</span>
-        </div>
-        <div class="status-icon opacity-0"></div>
-      `;
-      btn.addEventListener('click', () => this.handleAnswer(idx));
-      this.dom.optionsContainer.appendChild(btn);
-    });
+    if (isBinaryType) {
+      // Layout em Grade 2 Colunas para Fato ou Fake
+      this.dom.optionsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4';
+
+      q.options.forEach((opt, idx) => {
+        const isFact = idx === 0 || opt.toLowerCase().includes('fato') || opt.toLowerCase().includes('verdadeiro');
+        const btn = document.createElement('button');
+        btn.className = `quiz-option ${isFact ? 'quiz-option-fact' : 'quiz-option-fake'} w-full p-5 sm:p-6 rounded-2xl text-center font-display font-extrabold text-lg sm:text-xl border flex flex-col items-center justify-center gap-2 group shadow-lg cursor-pointer`;
+        
+        const iconSvg = isFact 
+          ? `<div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">✅</div>`
+          : `<div class="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">❌</div>`;
+        
+        const badgeLabel = isFact ? 'FATO' : 'FAKE';
+        const shortcutHint = isFact ? '[V] ou [1]' : '[F] ou [2]';
+        const titleColor = isFact ? 'text-emerald-300' : 'text-rose-300';
+
+        btn.innerHTML = `
+          ${iconSvg}
+          <div class="flex flex-col items-center">
+            <span class="${titleColor} tracking-wide">${opt.toUpperCase() || badgeLabel}</span>
+            <span class="text-[11px] font-sans font-medium text-gray-400 mt-0.5">${shortcutHint}</span>
+          </div>
+          <div class="status-icon opacity-0 mt-1"></div>
+        `;
+
+        btn.addEventListener('click', () => this.handleAnswer(idx));
+        this.dom.optionsContainer.appendChild(btn);
+      });
+    } else {
+      // Layout Clássico de 4 Alternativas
+      this.dom.optionsContainer.className = 'grid grid-cols-1 gap-3';
+      const letters = ['A', 'B', 'C', 'D'];
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-option w-full p-4 rounded-xl text-left font-medium text-gray-200 border border-gray-700/70 bg-gray-800/60 hover:bg-gray-700/60 flex items-center justify-between group shadow-sm cursor-pointer';
+        btn.innerHTML = `
+          <div class="flex items-center gap-3.5">
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm bg-gray-700/80 text-gray-300 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+              ${letters[idx] || (idx + 1)}
+            </span>
+            <span class="text-base font-medium">${opt}</span>
+          </div>
+          <div class="status-icon opacity-0"></div>
+        `;
+        btn.addEventListener('click', () => this.handleAnswer(idx));
+        this.dom.optionsContainer.appendChild(btn);
+      });
+    }
 
     // Oculta caixa de curiosidade e botão de próxima
     this.dom.curiosityBox.classList.add('hidden');

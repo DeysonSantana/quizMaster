@@ -1,6 +1,6 @@
-"Pergunta","Categoria","Dificuldade","OpcaoA","OpcaoB","OpcaoC","OpcaoD","RespostaCorreta","Curiosidade"
-"Qual planeta do Sistema Solar é conhecido como o Planeta Vermelho?","Ciência e Tecnologia","Fácil","Vênus","Júpiter","Marte","Mercúrio","C","A cor avermelhada de Marte ocorre devido ao óxido de ferro em sua superfície."
-"Qual é a capital oficial da França?","Geografia","Fácil","Lyon","Paris","Marselha","Nice","B","Paris ficou conhecida como Cidade Luz por ter sido pioneira na iluminação a gás."
-"A Queda da Bastilha ocorreu em qual ano?","História","Médio","1776","1789","1799","1804","B","O evento de 14 de julho de 1789 marcou simbolicamente o início da Revolução Francesa."
-"Qual banda lançou o álbum The Dark Side of the Moon em 1973?","Arte e Cultura Pop","Médio","Led Zeppelin","The Rolling Stones","Queen","Pink Floyd","D","O álbum permaneceu por mais de 900 semanas consecutivas nas paradas da Billboard."
-"Quem foi a primeira cientista a ganhar dois Prêmios Nobel em áreas científicas distintas?","Ciência e Tecnologia","Difícil","Albert Einstein","Marie Curie","Linus Pauling","Niels Bohr","B","Marie Curie venceu o Nobel de Física em 1903 e o de Química em 1911."
+﻿Pergunta,Categoria,Dificuldade,OpcaoA,OpcaoB,OpcaoC,OpcaoD,RespostaCorreta,Curiosidade
+"A Grande Muralha da China é visível a olho nu do espaço sideral.","Mitos e Ciência","Fácil","Fato","Fake","","","Fake","Astronautas da NASA e da ESA confirmaram que a muralha não é distinguível a olho nu da órbita terrestre."
+"Qual planeta do Sistema Solar é popularmente conhecido como o Planeta Vermelho?","Ciência e Tecnologia","Fácil","Vênus","Júpiter","Marte","Mercúrio","C","A coloração avermelhada de Marte ocorre devido à abundância de óxido de ferro em sua superfície."
+"O Monte Everest é a montanha mais alta do planeta Terra acima do nível do mar.","Geografia","Fácil","Fato","Fake","","","Fato","O Everest possui 8.848 metros de altitude em relação ao nível do mar."
+"Em que ano o homem pisou na Lua pela primeira vez na missão Apollo 11?","História","Fácil","1969","1972","1965","1959","A","Neil Armstrong e Buzz Aldrin caminharam na Lua em 20 de julho de 1969."
+"Os morcegos são animais completamente cegos que navegam apenas por som.","Biologia","Médio","Fato","Fake","","","Fake","Apesar de usarem ecolocalização avançada, todas as espécies de morcegos enxergam perfeitamente e usam a visão no dia a dia."

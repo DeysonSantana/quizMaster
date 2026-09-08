@@ -74,24 +74,30 @@ export function parseCSV(text) {
       errors.push(`Linha ${lineNum}: O texto da pergunta está vazio.`);
       continue;
     }
-    if (!optA || !optB || !optC || !optD) {
-      errors.push(`Linha ${lineNum}: Todas as 4 opções (A, B, C, D) devem estar preenchidas.`);
+    
+    // Suporte a Fato ou Fake (2 opções) ou Múltipla Escolha (4 opções)
+    const isBinaryRow = optA && optB && (!optC && !optD);
+    const options = isBinaryRow ? [optA, optB] : [optA, optB, optC, optD];
+
+    if (!isBinaryRow && (!optA || !optB || !optC || !optD)) {
+      errors.push(`Linha ${lineNum}: Preencha todas as 4 alternativas (ou apenas OpcaoA e OpcaoB para Fato/Fake).`);
       continue;
     }
 
     // Identifica resposta correta
-    const correctIndex = parseCorrectAnswer(rawCorrect, [optA, optB, optC, optD]);
+    const correctIndex = parseCorrectAnswer(rawCorrect, options);
     if (correctIndex === -1) {
-      errors.push(`Linha ${lineNum}: Resposta correta "${rawCorrect}" inválida. Utilize 'A', 'B', 'C', 'D' ou o número 1 a 4.`);
+      errors.push(`Linha ${lineNum}: Resposta correta "${rawCorrect}" inválida. Utilize 'A', 'B', 'C', 'D' ou 'FATO' / 'FAKE' / 'V' / 'F'.`);
       continue;
     }
 
     parsedQuestions.push({
       id: parsedQuestions.length + 1,
+      type: isBinaryRow ? 'fact_fake' : 'multiple_choice',
       question: questionText,
       category: category,
       difficulty: difficulty,
-      options: [optA, optB, optC, optD],
+      options: options,
       correctAnswer: correctIndex,
       curiosity: curiosity
     });
@@ -173,11 +179,16 @@ function normalizeHeader(h) {
 function parseCorrectAnswer(val, options) {
   const clean = val.trim().toUpperCase();
   
+  // Múltipla Escolha / Letras e Números
   if (clean === 'A' || clean === '1') return 0;
   if (clean === 'B' || clean === '2') return 1;
   if (clean === 'C' || clean === '3') return 2;
   if (clean === 'D' || clean === '4') return 3;
   if (clean === '0') return 0;
+
+  // Fato ou Fake / Verdadeiro ou Falso
+  if (clean === 'V' || clean === 'FATO' || clean === 'VERDADEIRO' || clean === 'TRUE') return 0;
+  if (clean === 'F' || clean === 'FAKE' || clean === 'FALSO' || clean === 'FALSE') return 1;
 
   // Busca exata pelo texto de uma das opções
   const matchIndex = options.findIndex(opt => opt.trim().toLowerCase() === val.trim().toLowerCase());
@@ -201,6 +212,17 @@ export function generateCSVTemplate() {
   ];
 
   const sampleRows = [
+    [
+      'A Grande Muralha da China é visível a olho nu do espaço sideral.',
+      'Mitos e Ciência',
+      'Fácil',
+      'Fato',
+      'Fake',
+      '',
+      '',
+      'Fake',
+      'Astronautas da NASA e da ESA confirmaram que a muralha não é distinguível a olho nu da órbita terrestre.'
+    ],
     [
       'Qual planeta do Sistema Solar é conhecido como o Planeta Vermelho?',
       'Ciência e Tecnologia',

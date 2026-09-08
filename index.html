@@ -282,7 +282,7 @@
             Ligado
           </button>
         </div>
-        <p class="text-[10px] text-gray-500 text-center font-mono">QuizMaster v2.1.0 • Offline &amp; GitHub Pages</p>
+        <p class="text-[10px] text-gray-500 text-center font-mono">QuizMaster v2.2.0 • Offline &amp; GitHub Pages</p>
       </div>
 
     </aside>
@@ -582,7 +582,7 @@
 
   <!-- Footer -->
   <footer class="w-full border-t border-gray-800/80 bg-gray-950/40 py-4 text-center text-xs text-gray-500">
-    <p>Quiz de Conhecimentos Gerais &bull; Desenvolvido para Gamificação Educacional | v2.1.0</p>
+    <p>Quiz de Conhecimentos Gerais &bull; Desenvolvido para Gamificação Educacional | v2.2.0</p>
   </footer>
 
   <!-- MODAL 1: CRIADOR VISUAL DE QUIZ -->
@@ -895,11 +895,11 @@
             <button type="button" class="ai-suggestion-tag text-[10px] sm:text-[11px] px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700/60 transition-colors" data-topic="Geografia Geral e Continentes">🌍 Geografia</button>
           </div>
 
-          <!-- Quantidade e Nível de Dificuldade -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 pt-1">
+          <!-- Quantidade, Dificuldade e Formato -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-1">
             <div>
               <div class="flex items-center justify-between mb-1">
-                <label class="text-xs font-semibold text-gray-200">Qtd. de Perguntas (Aberto)</label>
+                <label class="text-xs font-semibold text-gray-200">Qtd. de Perguntas</label>
                 <span class="text-[10px] text-purple-300 font-mono">1 a 50+</span>
               </div>
               <div class="space-y-1.5">
@@ -908,20 +908,26 @@
                   <span class="text-[9px] text-gray-500">Rápido:</span>
                   <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700" data-count="5">5</button>
                   <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-500/40 font-bold" data-count="10">10</button>
-                  <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700" data-count="15">15</button>
                   <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700" data-count="20">20</button>
                   <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700" data-count="30">30</button>
-                  <button type="button" class="ai-count-preset text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700" data-count="50">50</button>
                 </div>
               </div>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-gray-200 mb-1">Dificuldade Pedagógica</label>
+              <label class="block text-xs font-semibold text-gray-200 mb-1">Formato do Quiz</label>
+              <select id="ai-format-select" class="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-700 text-xs text-gray-100 focus:border-purple-500">
+                <option value="multiple_choice" selected>🔘 Múltipla Escolha</option>
+                <option value="fact_fake">⚡ Fato ou Fake</option>
+                <option value="mixed">🔀 Misto</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-200 mb-1">Dificuldade</label>
               <select id="ai-difficulty-select" class="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-700 text-xs text-gray-100 focus:border-purple-500">
-                <option value="Misto" selected>🎯 Misto (Fácil ➔ Difícil)</option>
-                <option value="Fácil">🟢 Fácil (Iniciante)</option>
-                <option value="Médio">🟡 Médio (Intermediário)</option>
-                <option value="Difícil">🔴 Difícil (Avançado)</option>
+                <option value="Misto" selected>🎯 Misto</option>
+                <option value="Fácil">🟢 Fácil</option>
+                <option value="Médio">🟡 Médio</option>
+                <option value="Difícil">🔴 Difícil</option>
               </select>
             </div>
           </div>

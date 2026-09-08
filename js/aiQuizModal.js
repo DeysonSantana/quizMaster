@@ -26,6 +26,7 @@ export class AIQuizModal {
       baseTextInput: document.getElementById('ai-base-text'),
       countInput: document.getElementById('ai-count-input'),
       countPresets: document.querySelectorAll('.ai-count-preset'),
+      formatSelect: document.getElementById('ai-format-select'),
       difficultySelect: document.getElementById('ai-difficulty-select'),
       suggestionTags: document.querySelectorAll('.ai-suggestion-tag'),
 
@@ -205,6 +206,7 @@ export class AIQuizModal {
     const rawCount = this.dom.countInput ? parseInt(this.dom.countInput.value, 10) : 10;
     const count = isNaN(rawCount) || rawCount < 1 ? 10 : Math.min(rawCount, 100);
     const difficulty = this.dom.difficultySelect.value;
+    const format = this.dom.formatSelect ? this.dom.formatSelect.value : 'multiple_choice';
     const key = this.dom.apiKeyInput.value.trim();
 
     if (key && key !== aiService.getApiKey()) {
@@ -234,6 +236,7 @@ export class AIQuizModal {
         topic: topic,
         baseText: baseText,
         count: count,
+        format: format,
         difficulty: difficulty
       });
 
