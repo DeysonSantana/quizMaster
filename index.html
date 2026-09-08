@@ -55,14 +55,14 @@
   <header class="w-full border-b border-gray-800/80 bg-gray-950/90 backdrop-blur-md sticky top-0 z-50 shadow-sm">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-3">
       
-      <!-- Brand Logo & Title (Nunca quebra ou trunca) -->
-      <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
-        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
+      <!-- Brand Logo & Title (Clicável para voltar ao início) -->
+      <div id="header-brand-logo" class="flex items-center gap-2.5 sm:gap-3 shrink-0 cursor-pointer group hover:opacity-90 transition-all" title="Ir para a Tela Inicial">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0 group-hover:scale-105 transition-transform">
           <i data-lucide="brain" class="w-5 h-5 sm:w-6 sm:h-6 text-white"></i>
         </div>
         <div class="flex flex-col justify-center">
           <div class="flex items-center gap-1.5">
-            <span class="font-display font-extrabold text-base sm:text-xl tracking-tight text-white leading-tight">QuizMaster</span>
+            <span class="font-display font-extrabold text-base sm:text-xl tracking-tight text-white leading-tight group-hover:text-indigo-300 transition-colors">QuizMaster</span>
             <!-- Status Badge Online / Offline -->
             <div id="network-status-badge" class="px-2 py-0.5 rounded-full bg-gray-900/80 border border-gray-700/80 flex items-center gap-1 cursor-default text-[10px]" title="Status da Conexão">
               <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -160,12 +160,12 @@
       <!-- Topo do Drawer -->
       <div class="space-y-4">
         <div class="flex items-center justify-between border-b border-gray-800 pb-3">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-md text-white">
+          <div id="drawer-brand-logo" class="flex items-center gap-2.5 cursor-pointer group hover:opacity-90 transition-opacity" title="Ir para a Tela Inicial">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-md text-white group-hover:scale-105 transition-transform">
               <i data-lucide="brain" class="w-5 h-5"></i>
             </div>
             <div>
-              <h3 class="font-display font-extrabold text-base text-white leading-tight">QuizMaster</h3>
+              <h3 class="font-display font-extrabold text-base text-white leading-tight group-hover:text-indigo-300 transition-colors">QuizMaster</h3>
               <span class="text-[10px] text-gray-400 font-medium">Menu &amp; Navegação</span>
             </div>
           </div>
@@ -582,7 +582,7 @@
 
   <!-- Footer -->
   <footer class="w-full border-t border-gray-800/80 bg-gray-950/40 py-4 text-center text-xs text-gray-500">
-    <p>Quiz de Conhecimentos Gerais &bull; Desenvolvido para Gamificação Educacional | v2.2.0</p>
+    <p>Quiz de Conhecimentos Gerais &bull; Desenvolvido para Gamificação Educacional | v2.3.0</p>
   </footer>
 
   <!-- MODAL 1: CRIADOR VISUAL DE QUIZ -->
@@ -1029,11 +1029,60 @@
           <span>Continuar com o Google</span>
         </button>
 
+        <!-- Botão Entrar como Convidado (Sem Cadastro) -->
+        <button type="button" id="guest-auth-btn" class="w-full py-2.5 px-4 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-indigo-300 hover:text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all">
+          <i data-lucide="gamepad-2" class="w-4 h-4 text-indigo-400"></i>
+          <span>🎮 Jogar como Convidado (Sem Conta)</span>
+        </button>
+
         <div class="text-center pt-1">
           <button type="button" id="auth-toggle-mode-btn" class="text-xs text-gray-400 hover:text-white transition-colors">
             <span id="auth-toggle-mode-text">Não tem conta? <strong class="text-indigo-400 underline">Cadastre-se grátis</strong></span>
           </button>
         </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 5B: CONFIGURAÇÃO DE CONVIDADO (NOME + EMOJI) -->
+  <div id="guest-setup-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="glass-card w-full max-w-sm rounded-2xl sm:rounded-3xl p-5 sm:p-6 space-y-4 my-auto animate-slide-up border border-indigo-500/40 text-center">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-2 text-left">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🎮</span>
+          <h3 class="font-display font-bold text-base text-white">Jogar como Convidado</h3>
+        </div>
+        <button id="close-guest-setup-btn" class="p-1 rounded-lg text-gray-400 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="py-1">
+        <div id="guest-avatar-preview" class="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 mx-auto flex items-center justify-center mb-1.5 text-3xl shadow-lg shadow-indigo-600/30 border-2 border-white/20 select-none">
+          🎓
+        </div>
+        <h4 class="font-bold text-sm text-white">Escolha seu Apelido e Avatar</h4>
+        <p class="text-[11px] text-gray-400 mt-0.5">Jogue imediatamente sem precisar criar senha ou conta.</p>
+      </div>
+
+      <!-- Grade com 40 Emojis de Avatar -->
+      <div class="p-2.5 rounded-2xl bg-gray-900/70 border border-gray-800 text-left space-y-1">
+        <label class="block text-[10px] font-bold text-gray-300">Escolha seu Emoji de Avatar:</label>
+        <div id="guest-emoji-grid" class="grid grid-cols-8 sm:grid-cols-8 gap-1 text-base max-h-[150px] overflow-y-auto pr-1">
+          <!-- Injetado via JS com os 40 emojis -->
+        </div>
+      </div>
+
+      <form id="guest-setup-form" class="space-y-3">
+        <div>
+          <label class="block text-left text-[11px] font-semibold text-gray-300 mb-1">Seu Apelido / Nome de Jogador *</label>
+          <input type="text" id="guest-nickname-input" required maxlength="25" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-center text-sm font-bold text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="Ex: Campeão do Quiz" />
+        </div>
+
+        <button type="submit" id="confirm-guest-btn" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 font-display font-bold text-sm text-white shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2">
+          <span>Começar a Jogar!</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
       </form>
     </div>
   </div>
@@ -1180,6 +1229,15 @@
           </select>
         </div>
 
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Modo de Início do Quiz</label>
+          <select id="room-start-mode-select" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-xs sm:text-sm text-amber-300 font-semibold focus:border-amber-500">
+            <option value="host_controlled" selected>🚦 Início Controlado pelo Host (Lobby com Início Simultâneo)</option>
+            <option value="open">⚡ Início Imediato Aberto (Cada jogador inicia quando entrar)</option>
+          </select>
+          <p class="text-[10px] text-gray-400 mt-1">No modo controlado, os alunos entram no lobby e você clica quando todos estiverem prontos!</p>
+        </div>
+
         <div class="flex items-center justify-between gap-2.5 pt-2 border-t border-gray-800">
           <button type="button" id="cancel-create-room-btn" class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 transition-colors">
             Cancelar
@@ -1240,6 +1298,30 @@
         <div id="copy-room-feedback" class="hidden text-[11px] text-emerald-400 font-semibold"></div>
       </div>
 
+      <!-- Painel do Lobby em Tempo Real (Para Início Controlado) -->
+      <div id="room-live-participants-section" class="p-3.5 rounded-2xl bg-gray-900/90 border border-amber-500/30 text-left space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+            <i data-lucide="users" class="w-4 h-4 text-amber-400"></i>
+            <span>Jogadores no Lobby (<span id="room-live-participants-count">0</span>)</span>
+          </span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Ao Vivo
+          </span>
+        </div>
+        <div id="room-live-participants-container" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1">
+          <span class="text-[11px] text-gray-500 italic py-1">Aguardando participantes entrarem com o PIN...</span>
+        </div>
+      </div>
+
+      <!-- Botão Host Iniciar Partida -->
+      <div id="host-start-room-wrapper" class="pt-1">
+        <button id="host-start-room-btn" type="button" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 font-display font-extrabold text-sm text-white shadow-lg shadow-emerald-600/40 transition-all flex items-center justify-center gap-2">
+          <i data-lucide="play-circle" class="w-5 h-5 text-white animate-pulse"></i>
+          <span>INICIAR QUIZ PARA TODOS AGORA</span>
+        </button>
+      </div>
+
       <!-- Ações da Sala -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-800">
         <button id="view-room-leaderboard-btn" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-display font-bold text-xs text-white shadow-md transition-all flex items-center justify-center gap-1.5">
@@ -1251,6 +1333,41 @@
           <span>Jogar Nesta Sala</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL 9B: LOBBY DE ESPERA DO JOGADOR (AGUARDANDO INÍCIO DO HOST) -->
+  <div id="player-waiting-lobby-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+    <div class="glass-card w-full max-w-md rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-5 my-auto animate-slide-up border border-indigo-500/40 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center mx-auto text-3xl shadow-lg shadow-indigo-600/20 border border-indigo-500/30 animate-bounce">
+        ⏳
+      </div>
+      <div>
+        <span id="lobby-room-pin-badge" class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">PIN: 000000</span>
+        <h3 id="lobby-room-title" class="font-display font-bold text-lg sm:text-xl text-white mt-2 truncate">Sala de Desafio</h3>
+        <p class="text-xs text-indigo-300 mt-1 font-medium">Você está conectado! Aguarde o professor iniciar a partida para todos...</p>
+      </div>
+      
+      <div class="p-4 rounded-2xl bg-gray-900/80 border border-gray-800 text-left space-y-2">
+        <div class="flex items-center justify-between text-xs text-gray-300 font-bold">
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="users" class="w-4 h-4 text-indigo-400"></i> Participantes no Lobby
+          </span>
+          <span id="lobby-player-count-badge" class="px-2 py-0.5 rounded-full bg-indigo-600/30 text-indigo-300 text-[11px]">1</span>
+        </div>
+        <div id="lobby-participants-list" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
+          <!-- Badges dos colegas na sala -->
+        </div>
+      </div>
+
+      <div class="flex items-center justify-center gap-2 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 py-2 rounded-xl">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span class="font-semibold">Sincronizado ao vivo • O jogo começará automaticamente</span>
+      </div>
+
+      <button id="cancel-waiting-lobby-btn" type="button" class="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs text-gray-300 font-semibold transition-colors">
+        Sair da Sala
+      </button>
     </div>
   </div>
 
@@ -1278,7 +1395,7 @@
       <!-- Grade de Seleção de Avatar para o Jogador -->
       <div class="p-2.5 rounded-2xl bg-gray-900/70 border border-gray-800 text-left space-y-1">
         <label class="block text-[10px] font-bold text-gray-300">Escolha seu Emoji:</label>
-        <div id="player-emoji-grid" class="grid grid-cols-8 gap-1 text-base">
+        <div id="player-emoji-grid" class="grid grid-cols-8 gap-1 text-base max-h-[140px] overflow-y-auto pr-1">
           <!-- Injetado via JS -->
         </div>
       </div>

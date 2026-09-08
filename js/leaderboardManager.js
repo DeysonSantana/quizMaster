@@ -5,7 +5,13 @@
 import { serverlessDB } from './firebaseConfig.js';
 import { soundFx } from './audio.js';
 
-const AVATARS = ['🎓', '🚀', '🧠', '🦁', '🦊', '🤖', '🧙‍♂️', '👑', '⚡', '🌟', '🐱', '🐶', '👾', '🎯', '🏆', '🔥'];
+const AVATARS = [
+  '🎓', '🧠', '📚', '🔬', '🧪', '💡', '🎨', '🏛️',
+  '🚀', '🛸', '🪐', '🌟', '⚡', '🤖', '👾', '🔮',
+  '🦁', '🦊', '🐯', '🐼', '🦉', '🦖', '🐙', '🐬', '🦄', '🦅',
+  '👑', '🧙‍♂️', '🥷', '🦸', '🎮', '💎', '🛡️', '⚔️', '🎯', '🏆', '🔥', '🎪',
+  '🐱', '🐶'
+];
 
 export class LeaderboardManager {
   constructor(app) {
@@ -14,6 +20,8 @@ export class LeaderboardManager {
     this.playerNickname = '';
     this.selectedPlayerAvatar = '🚀';
     this.firestoreUnsubscribe = null;
+    this.lobbyUnsubscribe = null;
+    this.participantsLobbyUnsubscribe = null;
 
     this.dom = {
       // Nickname Prompt Modal
@@ -26,6 +34,14 @@ export class LeaderboardManager {
       playerAvatarPreview: document.getElementById('player-avatar-preview'),
       playerEmojiGrid: document.getElementById('player-emoji-grid'),
       confirmNicknameBtn: document.getElementById('confirm-nickname-btn'),
+
+      // Waiting Lobby Modal (Início Controlado pelo Host)
+      waitingLobbyModal: document.getElementById('player-waiting-lobby-modal'),
+      lobbyRoomPinBadge: document.getElementById('lobby-room-pin-badge'),
+      lobbyRoomTitle: document.getElementById('lobby-room-title'),
+      lobbyPlayerCountBadge: document.getElementById('lobby-player-count-badge'),
+      lobbyParticipantsList: document.getElementById('lobby-participants-list'),
+      cancelWaitingLobbyBtn: document.getElementById('cancel-waiting-lobby-btn'),
 
       // Leaderboard / Podium Modal
       leaderboardModal: document.getElementById('room-leaderboard-modal'),
@@ -64,6 +80,9 @@ export class LeaderboardManager {
     if (this.dom.closeLeaderboardModalBtn) {
       this.dom.closeLeaderboardModalBtn.addEventListener('click', () => this.closeLeaderboardModal());
     }
+    if (this.dom.cancelWaitingLobbyBtn) {
+      this.dom.cancelWaitingLobbyBtn.addEventListener('click', () => this.leaveWaitingLobby());
+    }
 
     // Submissão do Nickname
     if (this.dom.nicknameForm) {
@@ -100,7 +119,7 @@ export class LeaderboardManager {
       this.dom.playerAvatarPreview.textContent = this.selectedPlayerAvatar;
     }
 
-    // Renderiza botões de emoji no modal de nickname
+    // Renderiza botões com os 40 emojis no modal de nickname
     if (this.dom.playerEmojiGrid) {
       this.dom.playerEmojiGrid.innerHTML = '';
       AVATARS.forEach(emoji => {
@@ -108,7 +127,7 @@ export class LeaderboardManager {
         btn.type = 'button';
         btn.className = `emoji-avatar-btn p-1 rounded-lg border flex items-center justify-center text-lg transition-all ${
           emoji === this.selectedPlayerAvatar 
-            ? 'selected bg-indigo-600/40 border-indigo-500' 
+            ? 'selected bg-indigo-600/40 border-indigo-400 ring-2 ring-indigo-500 shadow-md' 
             : 'bg-gray-800/60 border-gray-700/60 hover:bg-gray-700'
         }`;
         btn.textContent = emoji;
@@ -138,7 +157,7 @@ export class LeaderboardManager {
     document.body.classList.remove('overflow-hidden');
   }
 
-  handleNicknameSubmit() {
+  async handleNicknameSubmit() {
     const nick = (this.dom.nicknameInput.value || '').trim();
     if (!nick) {
       alert('Por favor, informe seu nome ou apelido para o ranking.');
@@ -148,6 +167,147 @@ export class LeaderboardManager {
     this.playerNickname = nick;
     this.closeNicknameModal();
 
+    // 1. Registra participante na sala
+    const participantData = {
+      id: (this.app.authManager && this.app.authManager.currentUser && this.app.authManager.currentUser.uid) || ('p_' + Math.random().toString(36).substring(2, 9)),
+      nickname: this.playerNickname,
+      avatarEmoji: this.selectedPlayerAvatar || '🚀',
+      joinedAt: new Date().toISOString()
+    };
+    await this.registerParticipant(this.activeRoomForPlayer.pin, participantData);
+
+    // 2. Verifica se a sala requer início controlado pelo host
+    const isHostControlled = this.activeRoomForPlayer.startMode === 'host_controlled';
+    const isWaiting = this.activeRoomForPlayer.status === 'waiting';
+
+    if (isHostControlled && isWaiting) {
+      // Abre a tela de lobby de espera do aluno
+      this.enterWaitingLobby(this.activeRoomForPlayer);
+    } else {
+      // Início imediato
+      this.launchGameForPlayer();
+    }
+  }
+
+  async registerParticipant(pin, participant) {
+    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+      try {
+        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        await setDoc(doc(serverlessDB.firestore, `quiz_rooms/${pin}/participants`, participant.id), participant);
+        return;
+      } catch (e) {
+        console.warn('Erro ao salvar participante no Firestore:', e);
+      }
+    }
+
+    // Local
+    try {
+      const key = `QUIZ_ROOM_PARTICIPANTS_${pin}`;
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      const existIdx = list.findIndex(p => p.id === participant.id);
+      if (existIdx >= 0) list[existIdx] = participant;
+      else list.push(participant);
+      localStorage.setItem(key, JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  enterWaitingLobby(room) {
+    if (this.dom.lobbyRoomTitle) this.dom.lobbyRoomTitle.textContent = room.title;
+    if (this.dom.lobbyRoomPinBadge) this.dom.lobbyRoomPinBadge.textContent = `PIN: ${room.pin}`;
+
+    if (this.dom.waitingLobbyModal) {
+      this.dom.waitingLobbyModal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+    if (window.lucide) window.lucide.createIcons();
+
+    // Escuta mudanças de status da sala (quando o host iniciar) e participantes
+    this.setupLobbyRealtime(room.pin);
+  }
+
+  leaveWaitingLobby() {
+    this.cleanupLobbyListeners();
+    if (this.dom.waitingLobbyModal) {
+      this.dom.waitingLobbyModal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+  }
+
+  cleanupLobbyListeners() {
+    if (this.lobbyUnsubscribe) {
+      this.lobbyUnsubscribe();
+      this.lobbyUnsubscribe = null;
+    }
+    if (this.participantsLobbyUnsubscribe) {
+      this.participantsLobbyUnsubscribe();
+      this.participantsLobbyUnsubscribe = null;
+    }
+  }
+
+  async setupLobbyRealtime(pin) {
+    this.cleanupLobbyListeners();
+
+    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+      try {
+        const { doc, collection, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        
+        // 1. Escuta mudanças no doc da sala
+        this.lobbyUnsubscribe = onSnapshot(doc(serverlessDB.firestore, 'quiz_rooms', pin), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.status === 'active') {
+              this.onHostStartedQuiz();
+            }
+          }
+        });
+
+        // 2. Escuta participantes
+        this.participantsLobbyUnsubscribe = onSnapshot(collection(serverlessDB.firestore, `quiz_rooms/${pin}/participants`), (snapshot) => {
+          const list = [];
+          snapshot.forEach(d => list.push(d.data()));
+          this.renderLobbyParticipants(list);
+        });
+        return;
+      } catch (e) {
+        console.warn('Erro ao configurar listener do lobby no Firestore:', e);
+      }
+    }
+
+    // Fallback Local
+    const list = this.getLocalParticipants(pin);
+    this.renderLobbyParticipants(list);
+  }
+
+  getLocalParticipants(pin) {
+    try {
+      const data = localStorage.getItem(`QUIZ_ROOM_PARTICIPANTS_${pin}`);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  renderLobbyParticipants(list) {
+    if (this.dom.lobbyPlayerCountBadge) {
+      this.dom.lobbyPlayerCountBadge.textContent = `${list.length} ${list.length === 1 ? 'conectado' : 'conectados'}`;
+    }
+    if (this.dom.lobbyParticipantsList) {
+      this.dom.lobbyParticipantsList.innerHTML = list.map(p => `
+        <div class="px-3 py-1.5 rounded-xl bg-gray-800 border border-indigo-500/30 text-xs text-white font-semibold flex items-center gap-1.5 shadow-sm">
+          <span class="text-base">${p.avatarEmoji || '🎓'}</span>
+          <span class="truncate max-w-[120px]">${this.escapeHtml(p.nickname || 'Jogador')}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  onHostStartedQuiz() {
+    this.leaveWaitingLobby();
+    soundFx.playVictory();
+    this.launchGameForPlayer();
+  }
+
+  launchGameForPlayer() {
     // Carrega perguntas da sala no motor de jogo
     this.app.activeQuestions = this.activeRoomForPlayer.questions;
     this.app.isCustomQuiz = true;

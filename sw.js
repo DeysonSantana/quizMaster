@@ -3,7 +3,7 @@
  * Permite que a aplicacao funcione 100% offline sem conexao com a internet.
  */
 
-const CACHE_NAME = 'quizmaster-v2.2.0';
+const CACHE_NAME = 'quizmaster-v2.3.0';
 
 // Arquivos principais da aplicacao para pre-cache imediato
 const STATIC_ASSETS = [
@@ -14,6 +14,7 @@ const STATIC_ASSETS = [
   './manifest.json',
   './js/app.js',
   './js/audio.js',
+  './js/offlineManager.js',
   './js/themeManager.js',
   './js/questions.js',
   './js/csvParser.js',

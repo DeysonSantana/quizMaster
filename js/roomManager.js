@@ -19,6 +19,7 @@ export class RoomManager {
       createRoomForm: document.getElementById('create-room-form'),
       roomQuizTitleDisplay: document.getElementById('room-quiz-title-display'),
       roomDurationSelect: document.getElementById('room-duration-select'),
+      roomStartModeSelect: document.getElementById('room-start-mode-select'),
       roomTitleInput: document.getElementById('room-title-input'),
       confirmCreateRoomBtn: document.getElementById('confirm-create-room-btn'),
 
@@ -31,6 +32,11 @@ export class RoomManager {
       copyRoomFeedback: document.getElementById('copy-room-feedback'),
       roomQrContainer: document.getElementById('room-qrcode-container'),
       roomExpiresText: document.getElementById('room-expires-text'),
+      roomLiveParticipantsSection: document.getElementById('room-live-participants-section'),
+      roomLiveParticipantsCount: document.getElementById('room-live-participants-count'),
+      roomLiveParticipantsContainer: document.getElementById('room-live-participants-container'),
+      hostStartRoomWrapper: document.getElementById('host-start-room-wrapper'),
+      hostStartRoomBtn: document.getElementById('host-start-room-btn'),
       viewRoomLeaderboardBtn: document.getElementById('view-room-leaderboard-btn'),
       startRoomPlayBtn: document.getElementById('start-room-play-btn'),
       shortenRoomUrlBtn: document.getElementById('shorten-room-url-btn'),
@@ -183,6 +189,7 @@ export class RoomManager {
     if (!this.pendingRoomQuizData) return;
 
     const durationMinutes = parseInt(this.dom.roomDurationSelect.value, 10);
+    const startMode = this.dom.roomStartModeSelect ? this.dom.roomStartModeSelect.value : 'host_controlled';
     const roomTitle = (this.dom.roomTitleInput.value || '').trim() || this.pendingRoomQuizData.title;
 
     // Gera PIN de 6 dígitos único
@@ -196,6 +203,8 @@ export class RoomManager {
       quizTitle: this.pendingRoomQuizData.title,
       author: this.pendingRoomQuizData.author || 'Professor',
       questions: this.pendingRoomQuizData.questions,
+      startMode: startMode,
+      status: (startMode === 'open') ? 'active' : 'waiting',
       createdAt: new Date(now).toISOString(),
       expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
       active: true
@@ -222,8 +231,36 @@ export class RoomManager {
 
     // Banco Local
     const rooms = serverlessDB.getLocalRooms();
-    rooms.unshift(roomData);
+    const existingIdx = rooms.findIndex(r => r.pin === roomData.pin);
+    if (existingIdx >= 0) {
+      rooms[existingIdx] = roomData;
+    } else {
+      rooms.unshift(roomData);
+    }
     serverlessDB.saveLocalRooms(rooms);
+  }
+
+  async updateRoomStatus(pin, newStatus) {
+    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+      try {
+        const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        await updateDoc(doc(serverlessDB.firestore, 'quiz_rooms', pin), {
+          status: newStatus,
+          startedAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.warn('Erro ao atualizar status da sala no Firestore:', e);
+      }
+    }
+
+    // Local
+    const rooms = serverlessDB.getLocalRooms();
+    const room = rooms.find(r => r.pin === pin);
+    if (room) {
+      room.status = newStatus;
+      room.startedAt = new Date().toISOString();
+      serverlessDB.saveLocalRooms(rooms);
+    }
   }
 
   async getRoom(pin) {
@@ -249,6 +286,11 @@ export class RoomManager {
   displayRoomInfo(roomData) {
     this.currentRoom = roomData;
 
+    if (this.participantsUnsubscribe) {
+      this.participantsUnsubscribe();
+      this.participantsUnsubscribe = null;
+    }
+
     const baseUrl = window.location.href.split('#')[0].split('?')[0];
     const roomDirectPinUrl = `${baseUrl}#room=${roomData.pin}`;
 
@@ -268,6 +310,29 @@ export class RoomManager {
     if (this.dom.roomQrContainer) {
       renderQRCode(this.dom.roomQrContainer, roomDirectPinUrl);
     }
+
+    // Configura seção de participantes ao vivo e botão do Host
+    if (this.dom.hostStartRoomBtn) {
+      if (roomData.status === 'active') {
+        this.dom.hostStartRoomBtn.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i><span>QUIZ EM ANDAMENTO</span>`;
+        this.dom.hostStartRoomBtn.className = 'w-full py-3 px-4 rounded-xl bg-emerald-700 font-display font-extrabold text-sm text-white shadow-md flex items-center justify-center gap-2 cursor-default';
+      } else {
+        this.dom.hostStartRoomBtn.innerHTML = `<i data-lucide="play-circle" class="w-5 h-5 text-white animate-pulse"></i><span>INICIAR QUIZ PARA TODOS AGORA</span>`;
+        this.dom.hostStartRoomBtn.className = 'w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 font-display font-extrabold text-sm text-white shadow-lg shadow-emerald-600/40 transition-all flex items-center justify-center gap-2 cursor-pointer';
+        
+        this.dom.hostStartRoomBtn.onclick = async () => {
+          soundFx.playVictory();
+          await this.updateRoomStatus(roomData.pin, 'active');
+          roomData.status = 'active';
+          this.dom.hostStartRoomBtn.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i><span>QUIZ INICIADO PARA TODOS!</span>`;
+          this.dom.hostStartRoomBtn.className = 'w-full py-3 px-4 rounded-xl bg-emerald-700 font-display font-extrabold text-sm text-white shadow-md flex items-center justify-center gap-2';
+          if (window.lucide) window.lucide.createIcons();
+        };
+      }
+    }
+
+    // Escuta participantes ao vivo
+    this.setupHostLiveParticipants(roomData.pin);
 
     // Ações dos botões da sala
     if (this.dom.viewRoomLeaderboardBtn) {
@@ -289,6 +354,53 @@ export class RoomManager {
     this.dom.roomInfoModal.classList.remove('hidden');
     document.body.classList.add('overflow-hidden');
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  async setupHostLiveParticipants(pin) {
+    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+      try {
+        const { collection, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        this.participantsUnsubscribe = onSnapshot(collection(serverlessDB.firestore, `quiz_rooms/${pin}/participants`), (snapshot) => {
+          const list = [];
+          snapshot.forEach(doc => list.push(doc.data()));
+          this.renderHostParticipants(list);
+        });
+        return;
+      } catch (err) {
+        console.warn('Erro ao escutar participantes no Firestore:', err);
+      }
+    }
+
+    // Local
+    const localParticipants = this.getLocalParticipants(pin);
+    this.renderHostParticipants(localParticipants);
+  }
+
+  getLocalParticipants(pin) {
+    try {
+      const data = localStorage.getItem(`QUIZ_ROOM_PARTICIPANTS_${pin}`);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  renderHostParticipants(list) {
+    if (this.dom.roomLiveParticipantsCount) {
+      this.dom.roomLiveParticipantsCount.textContent = list.length;
+    }
+    if (this.dom.roomLiveParticipantsContainer) {
+      if (list.length === 0) {
+        this.dom.roomLiveParticipantsContainer.innerHTML = `<span class="text-[11px] text-gray-500 italic py-1">Aguardando participantes entrarem com o PIN...</span>`;
+      } else {
+        this.dom.roomLiveParticipantsContainer.innerHTML = list.map(p => `
+          <div class="px-2.5 py-1 rounded-xl bg-gray-800/90 border border-indigo-500/40 text-xs text-white font-medium flex items-center gap-1.5 shadow-sm animate-scale-in">
+            <span class="text-sm">${p.avatarEmoji || '🎓'}</span>
+            <span class="font-bold truncate max-w-[110px]">${p.nickname || 'Jogador'}</span>
+          </div>
+        `).join('');
+      }
+    }
   }
 
   async joinRoomByPin(pin) {

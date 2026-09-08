@@ -8,8 +8,11 @@ import { soundFx } from './audio.js';
 const STORAGE_SESSION_USER = 'QUIZMASTER_SESSION_USER';
 
 export const AVATAR_EMOJIS = [
-  '🎓', '🚀', '🧠', '🦁', '🦊', '🤖', '🧙‍♂️', '👑',
-  '⚡', '🌟', '🐱', '🐶', '👾', '🎯', '🏆', '🔥'
+  '🎓', '🧠', '📚', '🔬', '🧪', '💡', '🎨', '🏛️',
+  '🚀', '🛸', '🪐', '🌟', '⚡', '🤖', '👾', '🔮',
+  '🦁', '🦊', '🐯', '🐼', '🦉', '🦖', '🐙', '🐬', '🦄', '🦅',
+  '👑', '🧙‍♂️', '🥷', '🦸', '🎮', '💎', '🛡️', '⚔️', '🎯', '🏆', '🔥', '🎪',
+  '🐱', '🐶'
 ];
 
 export class AuthManager {
@@ -17,6 +20,7 @@ export class AuthManager {
     this.app = app;
     this.currentUser = this.loadSessionUser();
     this.authListeners = [];
+    this.selectedGuestEmoji = '🎓';
 
     this.dom = {
       // Header Auth Elements
@@ -39,7 +43,17 @@ export class AuthManager {
       authToggleModeBtn: document.getElementById('auth-toggle-mode-btn'),
       authToggleModeText: document.getElementById('auth-toggle-mode-text'),
       googleAuthBtn: document.getElementById('google-auth-btn'),
+      guestAuthBtn: document.getElementById('guest-auth-btn'),
       authErrorMsg: document.getElementById('auth-error-msg'),
+
+      // Guest Setup Modal
+      guestSetupModal: document.getElementById('guest-setup-modal'),
+      closeGuestSetupBtn: document.getElementById('close-guest-setup-btn'),
+      guestAvatarPreview: document.getElementById('guest-avatar-preview'),
+      guestEmojiGrid: document.getElementById('guest-emoji-grid'),
+      guestNicknameInput: document.getElementById('guest-nickname-input'),
+      guestSetupForm: document.getElementById('guest-setup-form'),
+      confirmGuestBtn: document.getElementById('confirm-guest-btn'),
 
       // User Profile / Settings Modal
       profileModal: document.getElementById('user-profile-modal'),
@@ -173,6 +187,33 @@ export class AuthManager {
       });
     }
 
+    // Botão Continuar como Convidado
+    if (this.dom.guestAuthBtn) {
+      this.dom.guestAuthBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeAuthModal();
+        this.openGuestModal();
+      });
+    }
+
+    // Fechar Modal de Convidado
+    if (this.dom.closeGuestSetupBtn) {
+      this.dom.closeGuestSetupBtn.addEventListener('click', () => this.closeGuestModal());
+    }
+
+    // Submissão do Formulário de Convidado
+    if (this.dom.guestSetupForm) {
+      this.dom.guestSetupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nickname = (this.dom.guestNicknameInput.value || '').trim();
+        if (!nickname) {
+          alert('Por favor, informe seu apelido.');
+          return;
+        }
+        this.loginAsGuest(nickname, this.selectedGuestEmoji || '🎓');
+      });
+    }
+
     // Logout
     if (this.dom.logoutBtn) {
       this.dom.logoutBtn.addEventListener('click', async () => {
@@ -247,6 +288,73 @@ export class AuthManager {
   closeAuthModal() {
     this.dom.authModal.classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
+  }
+
+  openGuestModal() {
+    this.selectedGuestEmoji = (this.currentUser && this.currentUser.avatarEmoji) || '🎓';
+    if (this.dom.guestAvatarPreview) {
+      this.dom.guestAvatarPreview.textContent = this.selectedGuestEmoji;
+    }
+    if (this.dom.guestNicknameInput) {
+      this.dom.guestNicknameInput.value = (this.currentUser && this.currentUser.isGuest) ? this.currentUser.name : '';
+    }
+
+    // Renderiza a grade com todos os 40 emojis
+    if (this.dom.guestEmojiGrid) {
+      this.dom.guestEmojiGrid.innerHTML = '';
+      AVATAR_EMOJIS.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `guest-emoji-btn p-1.5 rounded-xl border flex items-center justify-center text-lg sm:text-xl transition-all ${
+          emoji === this.selectedGuestEmoji 
+            ? 'selected bg-indigo-600/40 border-indigo-400 ring-2 ring-indigo-500 shadow-md' 
+            : 'bg-gray-800/60 border-gray-700/60 hover:bg-gray-700'
+        }`;
+        btn.textContent = emoji;
+        btn.addEventListener('click', () => {
+          soundFx.playClick();
+          this.selectedGuestEmoji = emoji;
+          if (this.dom.guestAvatarPreview) {
+            this.dom.guestAvatarPreview.textContent = emoji;
+          }
+          this.dom.guestEmojiGrid.querySelectorAll('.guest-emoji-btn').forEach(b => {
+            b.className = 'guest-emoji-btn p-1.5 rounded-xl border flex items-center justify-center text-lg sm:text-xl transition-all bg-gray-800/60 border-gray-700/60 hover:bg-gray-700';
+          });
+          btn.className = 'guest-emoji-btn p-1.5 rounded-xl border flex items-center justify-center text-lg sm:text-xl transition-all selected bg-indigo-600/40 border-indigo-400 ring-2 ring-indigo-500 shadow-md';
+        });
+        this.dom.guestEmojiGrid.appendChild(btn);
+      });
+    }
+
+    if (this.dom.guestSetupModal) {
+      this.dom.guestSetupModal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  closeGuestModal() {
+    if (this.dom.guestSetupModal) {
+      this.dom.guestSetupModal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+  }
+
+  loginAsGuest(nickname, avatarEmoji = '🎓') {
+    const guestId = 'guest_' + Math.random().toString(36).substring(2, 9);
+    this.currentUser = {
+      uid: guestId,
+      name: nickname,
+      email: 'Convidado',
+      isGuest: true,
+      avatarEmoji: avatarEmoji,
+      provider: 'guest'
+    };
+    this.saveSessionUser(this.currentUser);
+    this.closeGuestModal();
+    soundFx.playVictory();
+    this.updateUI();
+    this.notifyListeners();
   }
 
   updateAuthModalUI() {
@@ -525,23 +633,29 @@ export class AuthManager {
 
   openProfileModal() {
     if (!this.currentUser) return;
-    if (this.dom.profileEmailText) this.dom.profileEmailText.textContent = this.currentUser.email;
-    if (this.dom.profileNameText) this.dom.profileNameText.textContent = this.currentUser.name;
+    const isGuest = !!this.currentUser.isGuest;
+    if (this.dom.profileEmailText) {
+      this.dom.profileEmailText.textContent = isGuest ? '🎮 Jogador Convidado (Sem conta permanente)' : this.currentUser.email;
+    }
+    if (this.dom.profileNameText) {
+      this.dom.profileNameText.textContent = this.currentUser.name;
+    }
 
     const currentEmoji = this.currentUser.avatarEmoji || '🎓';
     if (this.dom.profileAvatarDisplay) {
       this.dom.profileAvatarDisplay.textContent = currentEmoji;
     }
 
-    // Renderiza a grade de emojis de avatar
+    // Renderiza a grade com todos os 40 emojis de avatar
     if (this.dom.profileEmojiGrid) {
+      this.dom.profileEmojiGrid.className = 'grid grid-cols-8 gap-1 text-lg max-h-[140px] overflow-y-auto pr-1';
       this.dom.profileEmojiGrid.innerHTML = '';
       AVATAR_EMOJIS.forEach(emoji => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = `emoji-avatar-btn p-1.5 rounded-xl border flex items-center justify-center text-xl transition-all ${
           emoji === currentEmoji 
-            ? 'selected bg-indigo-600/30 border-indigo-500 shadow-md shadow-indigo-600/30' 
+            ? 'selected bg-indigo-600/40 border-indigo-400 ring-2 ring-indigo-500 shadow-md' 
             : 'bg-gray-800/60 border-gray-700/60 hover:bg-gray-700'
         }`;
         btn.textContent = emoji;
@@ -557,8 +671,8 @@ export class AuthManager {
           this.openProfileModal();
           this.updateUI();
 
-          // Sincroniza com Firebase se conectado
-          if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+          // Sincroniza com Firebase se logado com conta
+          if (!isGuest && serverlessDB.isCloudEnabled && serverlessDB.firestore) {
             try {
               const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
               await setDoc(doc(serverlessDB.firestore, 'user_profiles', this.currentUser.uid), {

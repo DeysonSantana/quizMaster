@@ -154,6 +154,25 @@ class QuizApp {
   }
 
   bindEvents() {
+    // Clique na Logo (Header e Drawer) para voltar à tela inicial
+    const headerLogo = document.getElementById('header-brand-logo');
+    const drawerLogo = document.getElementById('drawer-brand-logo');
+
+    const handleLogoClick = () => {
+      soundFx.playClick();
+      this.goToHomeScreen();
+    };
+
+    if (headerLogo) {
+      headerLogo.addEventListener('click', handleLogoClick);
+    }
+    if (drawerLogo) {
+      drawerLogo.addEventListener('click', () => {
+        this.closeMobileDrawer();
+        handleLogoClick();
+      });
+    }
+
     this.dom.startBtn.addEventListener('click', () => {
       soundFx.playClick();
       this.startQuiz();
@@ -529,6 +548,26 @@ class QuizApp {
     });
     this.screens[name].classList.remove('hidden');
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  goToHomeScreen() {
+    clearInterval(this.timerInterval);
+    
+    // Fecha todos os modais abertos
+    const allModais = document.querySelectorAll('[id$="-modal"]');
+    allModais.forEach(m => m.classList.add('hidden'));
+    document.body.classList.remove('overflow-hidden');
+
+    if (this.quizBuilder) this.quizBuilder.closeBuilder();
+    this.closeMobileDrawer();
+
+    // Limpa hash se houver
+    if (window.location.hash) {
+      history.pushState('', document.title, window.location.pathname + window.location.search);
+    }
+
+    this.showScreen('welcome');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   getActiveScreen() {
