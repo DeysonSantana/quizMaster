@@ -123,6 +123,9 @@ class QuizApp {
     window.addEventListener('hashchange', () => {
       this.checkSharedUrlQuiz();
     });
+    window.addEventListener('popstate', () => {
+      this.checkSharedUrlQuiz();
+    });
 
     if (window.lucide) {
       window.lucide.createIcons();
@@ -133,11 +136,20 @@ class QuizApp {
     const sharedData = decodeQuizFromUrl();
     if (sharedData && sharedData.questions && sharedData.questions.length > 0) {
       this.activeQuestions = sharedData.questions;
+      this.questions = [...this.activeQuestions];
       this.isCustomQuiz = true;
       this.customFileName = sharedData.title || 'Quiz Compartilhado';
 
       const title = sharedData.title || 'Quiz Personalizado';
       const author = sharedData.author || 'Autor';
+
+      if (sharedData.timerSeconds !== undefined && sharedData.timerSeconds > 0) {
+        this.timerSeconds = sharedData.timerSeconds;
+        this.timerEnabled = true;
+        if (this.dom.welcomeTimerSelect) {
+          this.dom.welcomeTimerSelect.value = sharedData.timerSeconds;
+        }
+      }
 
       this.dom.quizSourceLabel.innerHTML = `🔗 <strong class="text-indigo-400">${title}</strong> por ${author} (${sharedData.questions.length} perguntas)`;
       this.dom.resetDefaultQuizBtn.classList.remove('hidden');

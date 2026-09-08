@@ -15,13 +15,15 @@ function minifyQuizPayload(quizData) {
   return {
     t: quizData.title || 'Quiz Personalizado',
     u: quizData.author || 'Criador',
+    s: typeof quizData.timerSeconds === 'number' ? quizData.timerSeconds : 20,
     q: (quizData.questions || []).map(item => [
       item.question || '',
       item.category || 'Geral',
       typeof item.difficulty === 'number' ? item.difficulty : (diffMap[item.difficulty] !== undefined ? diffMap[item.difficulty] : 0),
       item.options || ['', '', '', ''],
       typeof item.correctAnswer === 'number' ? item.correctAnswer : 0,
-      item.curiosity || ''
+      item.curiosity || '',
+      item.type || (item.options && item.options.length === 2 ? 'fact_fake' : 'multiple_choice')
     ])
   };
 }
@@ -30,6 +32,7 @@ function minifyQuizPayload(quizData) {
  * Restaura a estrutura completa do quiz a partir da versão compactada
  */
 function unminifyQuizPayload(minified) {
+  if (!minified) return null;
   if (minified.questions && Array.isArray(minified.questions)) {
     return minified;
   }
@@ -37,29 +40,36 @@ function unminifyQuizPayload(minified) {
   const diffReverseMap = { 0: 'Fácil', 1: 'Médio', 2: 'Difícil' };
   const title = minified.t || minified.title || 'Quiz Personalizado';
   const author = minified.u || minified.author || 'Criador';
+  const timerSeconds = typeof minified.s === 'number' ? minified.s : 20;
   const rawQuestions = minified.q || minified.questions || [];
 
   const questions = rawQuestions.map((item, idx) => {
     if (Array.isArray(item)) {
       const diffVal = item[2];
       const diffStr = typeof diffVal === 'number' ? (diffReverseMap[diffVal] || 'Fácil') : (diffVal || 'Fácil');
+      const itemOptions = Array.isArray(item[3]) ? item[3] : ['', '', '', ''];
+      const itemType = item[6] || (itemOptions.length === 2 ? 'fact_fake' : 'multiple_choice');
 
       return {
         id: idx + 1,
+        type: itemType,
         question: item[0] || '',
         category: item[1] || 'Geral',
         difficulty: diffStr,
-        options: Array.isArray(item[3]) ? item[3] : ['', '', '', ''],
+        options: itemOptions,
         correctAnswer: typeof item[4] === 'number' ? item[4] : 0,
         curiosity: item[5] || 'Resposta correta registrada!'
       };
     } else {
+      const itemOptions = item.options || item.o || ['', '', '', ''];
+      const itemType = item.type || (itemOptions.length === 2 ? 'fact_fake' : 'multiple_choice');
       return {
         id: item.id || (idx + 1),
+        type: itemType,
         question: item.question || item.q || '',
         category: item.category || item.c || 'Geral',
         difficulty: item.difficulty || item.d || 'Fácil',
-        options: item.options || item.o || ['', '', '', ''],
+        options: itemOptions,
         correctAnswer: typeof item.correctAnswer === 'number' ? item.correctAnswer : (typeof item.a === 'number' ? item.a : 0),
         curiosity: item.curiosity || item.cur || 'Resposta correta registrada!'
       };
@@ -69,6 +79,7 @@ function unminifyQuizPayload(minified) {
   return {
     title: title,
     author: author,
+    timerSeconds: timerSeconds,
     questions: questions
   };
 }
@@ -103,34 +114,58 @@ export function encodeQuizToUrl(quizData) {
  */
 export function decodeQuizFromUrl() {
   try {
-    const hash = window.location.hash;
     let payload = '';
+    const hash = window.location.hash || '';
 
-    if (hash && hash.startsWith('#quiz=')) {
-      payload = hash.replace('#quiz=', '');
+    if (hash.includes('quiz=')) {
+      payload = hash.split('quiz=')[1].split('&')[0];
     } else {
       const urlParams = new URLSearchParams(window.location.search);
-      payload = urlParams.get('quiz');
+      payload = urlParams.get('quiz') || '';
     }
 
     if (!payload) return null;
 
     let jsonStr = '';
+
+    // 1. Tenta descompactar com LZString diretamente
     if (window.LZString && typeof window.LZString.decompressFromEncodedURIComponent === 'function') {
       jsonStr = window.LZString.decompressFromEncodedURIComponent(payload);
     }
 
-    // Se o LZString falhar ou retornar nulo, tenta fallback Base64
+    // 2. Se falhar, tenta com decodeURIComponent antes de passar ao LZString
+    if (!jsonStr && window.LZString) {
+      try {
+        jsonStr = window.LZString.decompressFromEncodedURIComponent(decodeURIComponent(payload));
+      } catch (e) {}
+    }
+
+    // 3. Se falhar, tenta descompactar com LZString decompressFromBase64
+    if (!jsonStr && window.LZString && typeof window.LZString.decompressFromBase64 === 'function') {
+      try {
+        jsonStr = window.LZString.decompressFromBase64(payload);
+      } catch (e) {}
+    }
+
+    // 4. Fallback: Base64 JSON direto
     if (!jsonStr) {
       try {
         jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(payload))));
       } catch (e) {
         try {
           jsonStr = atob(payload);
-        } catch (e2) {
-          jsonStr = '';
-        }
+        } catch (e2) {}
       }
+    }
+
+    // 5. Fallback: JSON direto caso venha sem codificação
+    if (!jsonStr) {
+      try {
+        const decoded = decodeURIComponent(payload);
+        if (decoded.startsWith('{') && decoded.endsWith('}')) {
+          jsonStr = decoded;
+        }
+      } catch (e) {}
     }
 
     if (!jsonStr) return null;

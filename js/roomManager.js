@@ -283,6 +283,36 @@ export class RoomManager {
     return rooms.find(r => r.pin === cleanPin) || null;
   }
 
+  encodeRoomPayload(roomData) {
+    try {
+      const minified = {
+        p: roomData.pin,
+        t: roomData.title,
+        q: roomData.quizTitle || roomData.title,
+        a: roomData.author || 'Professor',
+        e: roomData.expiresAt || null,
+        m: roomData.startMode || 'host_controlled',
+        s: roomData.status || 'waiting',
+        k: (roomData.questions || []).map(item => [
+          item.question || '',
+          item.category || 'Geral',
+          item.difficulty || 'Fácil',
+          item.options || ['', '', '', ''],
+          typeof item.correctAnswer === 'number' ? item.correctAnswer : 0,
+          item.curiosity || '',
+          item.type || (item.options && item.options.length === 2 ? 'fact_fake' : 'multiple_choice')
+        ])
+      };
+      const jsonStr = JSON.stringify(minified);
+      if (window.LZString && typeof window.LZString.compressToEncodedURIComponent === 'function') {
+        return window.LZString.compressToEncodedURIComponent(jsonStr);
+      }
+      return encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
+    } catch (e) {
+      return '';
+    }
+  }
+
   displayRoomInfo(roomData) {
     this.currentRoom = roomData;
 
@@ -292,7 +322,8 @@ export class RoomManager {
     }
 
     const baseUrl = window.location.href.split('#')[0].split('?')[0];
-    const roomDirectPinUrl = `${baseUrl}#room=${roomData.pin}`;
+    const payload = this.encodeRoomPayload(roomData);
+    const roomDirectPinUrl = payload ? `${baseUrl}#room=${roomData.pin}&d=${payload}` : `${baseUrl}#room=${roomData.pin}`;
 
     if (this.dom.roomPinDisplay) this.dom.roomPinDisplay.textContent = roomData.pin;
     if (this.dom.roomDirectUrlInput) this.dom.roomDirectUrlInput.value = roomDirectPinUrl;
@@ -455,24 +486,40 @@ export class RoomManager {
 
   checkUrlForRoomPin() {
     try {
-      const hash = window.location.hash;
-      if (!hash || !hash.includes('#room=')) return;
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+      let paramsStr = '';
 
-      // Extrai PIN e payload opcional
-      const paramsStr = hash.replace('#room=', '');
+      if (hash.includes('room=')) {
+        paramsStr = hash.split('room=')[1];
+      } else if (search.includes('room=')) {
+        paramsStr = search.split('room=')[1];
+      }
+
+      if (!paramsStr) return;
+
       const parts = paramsStr.split('&d=');
       const pin = parts[0].trim();
-      const rawPayload = parts[1] || '';
+      const rawPayload = parts[1] ? parts[1].split('&')[0] : '';
 
       if (rawPayload) {
         let jsonStr = '';
         if (window.LZString && typeof window.LZString.decompressFromEncodedURIComponent === 'function') {
           jsonStr = window.LZString.decompressFromEncodedURIComponent(rawPayload);
         }
+        if (!jsonStr && window.LZString) {
+          try {
+            jsonStr = window.LZString.decompressFromEncodedURIComponent(decodeURIComponent(rawPayload));
+          } catch (e) {}
+        }
         if (!jsonStr) {
           try {
             jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(rawPayload))));
-          } catch (e) {}
+          } catch (e) {
+            try {
+              jsonStr = atob(rawPayload);
+            } catch (e2) {}
+          }
         }
 
         if (jsonStr) {
@@ -483,17 +530,24 @@ export class RoomManager {
             quizTitle: parsed.q || 'Quiz',
             author: parsed.a || 'Professor',
             expiresAt: parsed.e || null,
+            startMode: parsed.m || 'host_controlled',
+            status: parsed.s || 'waiting',
             active: true,
             createdAt: new Date().toISOString(),
-            questions: (parsed.k || []).map((item, idx) => ({
-              id: idx + 1,
-              question: item[0] || '',
-              category: item[1] || 'Geral',
-              difficulty: item[2] || 'Fácil',
-              options: item[3] || ['', '', '', ''],
-              correctAnswer: typeof item[4] === 'number' ? item[4] : 0,
-              curiosity: item[5] || 'Resposta correta registrada!'
-            }))
+            questions: (parsed.k || []).map((item, idx) => {
+              const itemOptions = item[3] || ['', '', '', ''];
+              const itemType = item[6] || (itemOptions.length === 2 ? 'fact_fake' : 'multiple_choice');
+              return {
+                id: idx + 1,
+                type: itemType,
+                question: item[0] || '',
+                category: item[1] || 'Geral',
+                difficulty: item[2] || 'Fácil',
+                options: itemOptions,
+                correctAnswer: typeof item[4] === 'number' ? item[4] : 0,
+                curiosity: item[5] || 'Resposta correta registrada!'
+              };
+            })
           };
 
           // Salva automaticamente no dispositivo do jogador
