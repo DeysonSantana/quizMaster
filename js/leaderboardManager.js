@@ -19,6 +19,10 @@ export class LeaderboardManager {
     this.activeRoomForPlayer = null;
     this.playerNickname = '';
     this.selectedPlayerAvatar = '🚀';
+    this.currentParticipantId = null;
+    this.currentRoomPin = null;
+    this.hasBeenRegistered = false;
+    this.isGameCompleted = false;
     this.firestoreUnsubscribe = null;
     this.lobbyUnsubscribe = null;
     this.participantsLobbyUnsubscribe = null;
@@ -70,6 +74,7 @@ export class LeaderboardManager {
 
   init() {
     this.bindEvents();
+    this.bindWindowExitEvents();
   }
 
   bindEvents() {
@@ -81,7 +86,7 @@ export class LeaderboardManager {
       this.dom.closeLeaderboardModalBtn.addEventListener('click', () => this.closeLeaderboardModal());
     }
     if (this.dom.cancelWaitingLobbyBtn) {
-      this.dom.cancelWaitingLobbyBtn.addEventListener('click', () => this.leaveWaitingLobby());
+      this.dom.cancelWaitingLobbyBtn.addEventListener('click', () => this.leaveWaitingLobby(true));
     }
 
     // Submissão do Nickname
@@ -100,6 +105,22 @@ export class LeaderboardManager {
           this.loadLeaderboardScores(this.currentLeaderboardPin);
         }
       });
+    }
+  }
+
+  bindWindowExitEvents() {
+    // Quando o usuário fecha a aba, sai ou recarrega a página
+    window.addEventListener('beforeunload', () => {
+      this.handleAutoLeaveOnExit();
+    });
+    window.addEventListener('pagehide', () => {
+      this.handleAutoLeaveOnExit();
+    });
+  }
+
+  handleAutoLeaveOnExit() {
+    if (this.hasBeenRegistered && this.currentRoomPin && this.currentParticipantId && !this.isGameCompleted) {
+      this.removeParticipant(this.currentRoomPin, this.currentParticipantId);
     }
   }
 
@@ -168,8 +189,16 @@ export class LeaderboardManager {
     this.closeNicknameModal();
 
     // 1. Registra participante na sala
+    const participantId = (this.app.authManager && this.app.authManager.currentUser && this.app.authManager.currentUser.uid) 
+      || ('p_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
+    
+    this.currentParticipantId = participantId;
+    this.currentRoomPin = this.activeRoomForPlayer.pin;
+    this.hasBeenRegistered = true;
+    this.isGameCompleted = false;
+
     const participantData = {
-      id: (this.app.authManager && this.app.authManager.currentUser && this.app.authManager.currentUser.uid) || ('p_' + Math.random().toString(36).substring(2, 9)),
+      id: participantId,
       nickname: this.playerNickname,
       avatarEmoji: this.selectedPlayerAvatar || '🚀',
       joinedAt: new Date().toISOString()
@@ -211,6 +240,27 @@ export class LeaderboardManager {
     } catch (e) {}
   }
 
+  async removeParticipant(pin, participantId) {
+    if (!pin || !participantId) return;
+
+    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+      try {
+        const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        await deleteDoc(doc(serverlessDB.firestore, `quiz_rooms/${pin}/participants`, participantId));
+      } catch (e) {
+        console.warn('Erro ao remover participante do Firestore:', e);
+      }
+    }
+
+    // Local
+    try {
+      const key = `QUIZ_ROOM_PARTICIPANTS_${pin}`;
+      let list = JSON.parse(localStorage.getItem(key) || '[]');
+      list = list.filter(p => p.id !== participantId);
+      localStorage.setItem(key, JSON.stringify(list));
+    } catch (e) {}
+  }
+
   enterWaitingLobby(room) {
     if (this.dom.lobbyRoomTitle) this.dom.lobbyRoomTitle.textContent = room.title;
     if (this.dom.lobbyRoomPinBadge) this.dom.lobbyRoomPinBadge.textContent = `PIN: ${room.pin}`;
@@ -225,7 +275,14 @@ export class LeaderboardManager {
     this.setupLobbyRealtime(room.pin);
   }
 
-  leaveWaitingLobby() {
+  leaveWaitingLobby(shouldRemove = true) {
+    if (shouldRemove && this.hasBeenRegistered && this.currentRoomPin && this.currentParticipantId && !this.isGameCompleted) {
+      this.removeParticipant(this.currentRoomPin, this.currentParticipantId);
+      this.hasBeenRegistered = false;
+      this.currentParticipantId = null;
+      this.currentRoomPin = null;
+    }
+
     this.cleanupLobbyListeners();
     if (this.dom.waitingLobbyModal) {
       this.dom.waitingLobbyModal.classList.add('hidden');
@@ -266,6 +323,22 @@ export class LeaderboardManager {
           const list = [];
           snapshot.forEach(d => list.push(d.data()));
           this.renderLobbyParticipants(list);
+
+          // Verifica se o participante atual foi removido / expulso pelo professor
+          if (this.hasBeenRegistered && this.currentParticipantId && !this.isGameCompleted) {
+            const stillInRoom = list.some(p => p.id === this.currentParticipantId);
+            if (!stillInRoom) {
+              this.cleanupLobbyListeners();
+              this.currentParticipantId = null;
+              this.currentRoomPin = null;
+              this.hasBeenRegistered = false;
+              this.leaveWaitingLobby(false);
+              soundFx.playWrong();
+              alert('⚠️ Você foi removido da sala pelo anfitrião.');
+              this.app.goToHomeScreen();
+              return;
+            }
+          }
         });
         return;
       } catch (e) {
@@ -324,6 +397,8 @@ export class LeaderboardManager {
    */
   async recordPlayerScore(score, accuracy, maxStreak) {
     if (!this.activeRoomForPlayer || !this.playerNickname) return;
+
+    this.isGameCompleted = true;
 
     const scoreData = {
       pin: this.activeRoomForPlayer.pin,

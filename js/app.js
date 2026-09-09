@@ -565,6 +565,11 @@ class QuizApp {
   goToHomeScreen() {
     clearInterval(this.timerInterval);
     
+    // Sai de sala/lobby ativa se houver
+    if (this.leaderboardManager) {
+      this.leaderboardManager.leaveWaitingLobby(true);
+    }
+
     // Fecha todos os modais abertos
     const allModais = document.querySelectorAll('[id$="-modal"]');
     allModais.forEach(m => m.classList.add('hidden'));

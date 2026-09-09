@@ -425,13 +425,66 @@ export class RoomManager {
         this.dom.roomLiveParticipantsContainer.innerHTML = `<span class="text-[11px] text-gray-500 italic py-1">Aguardando participantes entrarem com o PIN...</span>`;
       } else {
         this.dom.roomLiveParticipantsContainer.innerHTML = list.map(p => `
-          <div class="px-2.5 py-1 rounded-xl bg-gray-800/90 border border-indigo-500/40 text-xs text-white font-medium flex items-center gap-1.5 shadow-sm animate-scale-in">
+          <div class="px-2.5 py-1 rounded-xl bg-gray-800/90 border border-indigo-500/40 text-xs text-white font-medium flex items-center gap-1.5 shadow-sm animate-scale-in group">
             <span class="text-sm">${p.avatarEmoji || '🎓'}</span>
-            <span class="font-bold truncate max-w-[110px]">${p.nickname || 'Jogador'}</span>
+            <span class="font-bold truncate max-w-[95px] sm:max-w-[110px]">${this.escapeHtml(p.nickname || 'Jogador')}</span>
+            <button type="button" class="kick-participant-btn p-0.5 ml-0.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition-colors" title="Remover participante da sala" data-participant-id="${p.id}" data-nickname="${this.escapeHtml(p.nickname || 'Jogador')}">
+              <i data-lucide="x" class="w-3.5 h-3.5 pointer-events-none"></i>
+            </button>
           </div>
         `).join('');
+
+        // Vincula evento de remoção aos botões de kick
+        const kickBtns = this.dom.roomLiveParticipantsContainer.querySelectorAll('.kick-participant-btn');
+        kickBtns.forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const pId = btn.getAttribute('data-participant-id');
+            const nick = btn.getAttribute('data-nickname') || 'o jogador';
+            if (confirm(`Deseja realmente remover "${nick}" desta sala?`)) {
+              soundFx.playClick();
+              await this.kickParticipant(this.currentRoom?.pin, pId);
+            }
+          });
+        });
+
+        if (window.lucide) window.lucide.createIcons();
       }
     }
+  }
+
+  async kickParticipant(pin, participantId) {
+    if (!pin || !participantId) return;
+
+    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+      try {
+        const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        await deleteDoc(doc(serverlessDB.firestore, `quiz_rooms/${pin}/participants`, participantId));
+        return;
+      } catch (err) {
+        console.warn('Erro ao remover participante do Firestore:', err);
+      }
+    }
+
+    // Local
+    try {
+      const key = `QUIZ_ROOM_PARTICIPANTS_${pin}`;
+      let list = JSON.parse(localStorage.getItem(key) || '[]');
+      list = list.filter(p => p.id !== participantId);
+      localStorage.setItem(key, JSON.stringify(list));
+      this.renderHostParticipants(list);
+    } catch (e) {
+      console.warn('Erro ao remover participante localmente:', e);
+    }
+  }
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   async joinRoomByPin(pin) {
@@ -456,6 +509,8 @@ export class RoomManager {
             quizTitle: this.app.customFileName || 'QuizMaster',
             author: 'Criador',
             questions: activeQs,
+            startMode: 'host_controlled',
+            status: 'waiting',
             createdAt: new Date().toISOString(),
             expiresAt: null,
             active: true
@@ -467,7 +522,21 @@ export class RoomManager {
         }
       }
 
-      // Verifica expiração
+      // 1. Verifica se a sala já foi iniciada pelo professor (bloqueia novas entradas)
+      if (room.startMode === 'host_controlled' && room.status === 'active') {
+        alert(`⛔ Esta sala de desafio já foi iniciada pelo professor e não está mais aceitando novos participantes.`);
+        soundFx.playWrong();
+        return;
+      }
+
+      // 2. Verifica se a sala foi finalizada ou desativada
+      if (room.active === false || room.status === 'finished' || room.status === 'closed') {
+        alert(`🔒 Esta sala de desafio foi encerrada.`);
+        soundFx.playWrong();
+        return;
+      }
+
+      // 3. Verifica expiração por tempo
       if (room.expiresAt && new Date(room.expiresAt).getTime() < Date.now()) {
         alert(`⏳ A sala com PIN "${cleanPin}" já expirou.`);
         soundFx.playWrong();
