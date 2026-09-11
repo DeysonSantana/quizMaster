@@ -588,13 +588,20 @@ export class AuthManager {
       if (isFirebase && serverlessDB.isCloudEnabled && serverlessDB.auth) {
         const firebaseUser = serverlessDB.auth.currentUser;
         if (firebaseUser) {
-          // Remove documento de perfil do Firestore
+          // Remove documento de perfil e quizzes do Firestore
           if (serverlessDB.firestore) {
             try {
-              const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+              const { doc, deleteDoc, collection, getDocs, query, where } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
               await deleteDoc(doc(serverlessDB.firestore, 'user_profiles', uid));
+
+              // Remove quizzes criados por este usuário na nuvem
+              const q = query(collection(serverlessDB.firestore, 'user_quizzes'), where('userId', '==', uid));
+              const snap = await getDocs(q);
+              const delList = [];
+              snap.forEach(d => delList.push(deleteDoc(doc(serverlessDB.firestore, 'user_quizzes', d.id))));
+              await Promise.all(delList);
             } catch (e) {
-              console.warn('Erro ao remover documento de perfil do Firestore:', e);
+              console.warn('Erro ao remover documento de perfil ou quizzes do Firestore:', e);
             }
           }
 
@@ -617,7 +624,11 @@ export class AuthManager {
         serverlessDB.saveLocalUsers(localUsers);
       }
 
-      // 3. Limpa sessão local e atualiza interface
+      // 3. Limpa storage particionado do usuário, sessão local e atualiza interface
+      try {
+        localStorage.removeItem(`QUIZMASTER_USER_QUIZZES_${uid}`);
+      } catch (e) {}
+
       this.currentUser = null;
       this.saveSessionUser(null);
       this.closeProfileModal();

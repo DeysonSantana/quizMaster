@@ -314,6 +314,7 @@ export class QuizBuilder {
       title: title,
       author: 'Professor / Criador',
       createdAt: new Date().toISOString(),
+      scoringMode: this.app.scoringMode || 'speed_and_accuracy',
       questions: questions
     };
 
@@ -748,6 +749,7 @@ export class QuizBuilder {
       title: title,
       author: author,
       timerSeconds: isNaN(timerSeconds) ? 20 : timerSeconds,
+      scoringMode: this.app.scoringMode || 'speed_and_accuracy',
       userId: this.app.authManager && this.app.authManager.currentUser ? this.app.authManager.currentUser.uid : null,
       updatedAt: new Date().toISOString(),
       questions: questions
@@ -779,8 +781,34 @@ export class QuizBuilder {
     }
   }
 
+  getStorageKey() {
+    const user = this.app?.authManager?.currentUser;
+    if (user && user.uid && !user.isGuest) {
+      return `QUIZMASTER_USER_QUIZZES_${user.uid}`;
+    }
+    if (user && user.isGuest) {
+      return `QUIZMASTER_GUEST_QUIZZES_${user.uid}`;
+    }
+    return 'QUIZMASTER_GUEST_QUIZZES_ANON';
+  }
+
   async saveQuizToStorage(quizData) {
     try {
+      const user = this.app?.authManager?.currentUser;
+      const isGuest = !!user?.isGuest;
+      const currentUid = user?.uid;
+
+      if (currentUid && !isGuest) {
+        quizData.userId = currentUid;
+        quizData.authorEmail = user.email || null;
+      } else if (isGuest && currentUid) {
+        quizData.userId = currentUid;
+        quizData.isGuestQuiz = true;
+      } else {
+        quizData.userId = 'guest';
+      }
+
+      const storageKey = this.getStorageKey();
       const list = this.getSavedQuizzes();
       const existingIdx = list.findIndex(q => q.id === quizData.id);
       if (existingIdx >= 0) {
@@ -788,10 +816,10 @@ export class QuizBuilder {
       } else {
         list.unshift(quizData);
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      localStorage.setItem(storageKey, JSON.stringify(list));
 
-      // Salva no Firebase Cloud Firestore
-      if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+      // Salva no Firebase Cloud Firestore apenas para usuários autenticados com conta real
+      if (user && !isGuest && currentUid && serverlessDB.isCloudEnabled && serverlessDB.firestore) {
         const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
         await setDoc(doc(serverlessDB.firestore, 'user_quizzes', quizData.id), quizData);
       }
@@ -802,8 +830,51 @@ export class QuizBuilder {
 
   getSavedQuizzes() {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
+      const key = this.getStorageKey();
+      const user = this.app?.authManager?.currentUser;
+      const currentUid = user?.uid;
+      const isGuest = !!user?.isGuest;
+
+      let list = [];
+      const data = localStorage.getItem(key);
+      if (data) {
+        try {
+          list = JSON.parse(data) || [];
+        } catch (e) {
+          list = [];
+        }
+      }
+
+      // Migração única da chave global legada QUIZMASTER_USER_QUIZZES caso o storage do usuário esteja vazio
+      if (list.length === 0 && localStorage.getItem('QUIZMASTER_USER_QUIZZES')) {
+        try {
+          const legacyData = JSON.parse(localStorage.getItem('QUIZMASTER_USER_QUIZZES')) || [];
+          if (Array.isArray(legacyData) && legacyData.length > 0) {
+            if (currentUid && !isGuest) {
+              const mine = legacyData.filter(q => q.userId === currentUid || !q.userId);
+              if (mine.length > 0) {
+                mine.forEach(q => { if (!q.userId) q.userId = currentUid; });
+                list = mine;
+                localStorage.setItem(key, JSON.stringify(list));
+              }
+            } else if (isGuest || !currentUid) {
+              const anon = legacyData.filter(q => !q.userId || q.userId === 'guest');
+              if (anon.length > 0) {
+                list = anon;
+                localStorage.setItem(key, JSON.stringify(list));
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      // Garante isolamento estrito: nunca expõe quizzes de outros usuários
+      if (currentUid && !isGuest) {
+        return list.filter(q => q.userId === currentUid || !q.userId);
+      } else if (isGuest && currentUid) {
+        return list.filter(q => q.userId === currentUid || q.userId === 'guest' || !q.userId);
+      }
+      return list.filter(q => !q.userId || q.userId === 'guest');
     } catch (e) {
       return [];
     }
@@ -839,6 +910,11 @@ export class QuizBuilder {
   }
 
   async openMyQuizzes() {
+    const user = this.app?.authManager?.currentUser;
+    const currentUid = user?.uid;
+    const isGuest = !!user?.isGuest;
+    const storageKey = this.getStorageKey();
+
     let list = this.getSavedQuizzes();
     const container = this.dom.myQuizzesListContainer;
     container.innerHTML = `
@@ -849,20 +925,28 @@ export class QuizBuilder {
     this.openModal(this.dom.myQuizzesModal);
     if (window.lucide) window.lucide.createIcons();
 
-    // Sincroniza com Firebase Cloud Firestore
-    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+    // Sincroniza com Firebase Cloud Firestore APENAS para o usuário autenticado (filtro estrito por userId)
+    if (!isGuest && currentUid && serverlessDB.isCloudEnabled && serverlessDB.firestore) {
       try {
-        const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
-        const snap = await getDocs(collection(serverlessDB.firestore, 'user_quizzes'));
+        const { collection, getDocs, query, where } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        const q = query(collection(serverlessDB.firestore, 'user_quizzes'), where('userId', '==', currentUid));
+        const snap = await getDocs(q);
         const cloudQuizzes = [];
-        snap.forEach(docSnap => cloudQuizzes.push(docSnap.data()));
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data && (data.userId === currentUid || !data.userId)) {
+            cloudQuizzes.push(data);
+          }
+        });
 
         if (cloudQuizzes.length > 0) {
           const mergedMap = new Map();
           list.forEach(q => mergedMap.set(q.id, q));
           cloudQuizzes.forEach(q => mergedMap.set(q.id, q));
-          list = Array.from(mergedMap.values()).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+          list = Array.from(mergedMap.values())
+            .filter(q => q.userId === currentUid || (!q.userId && !isGuest))
+            .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+          localStorage.setItem(storageKey, JSON.stringify(list));
         }
       } catch (err) {
         console.warn('Falha ao sincronizar quizzes da nuvem:', err);
@@ -973,12 +1057,14 @@ export class QuizBuilder {
         item.querySelector('.delete-quiz-btn').addEventListener('click', async () => {
           if (confirm(`Tem certeza que deseja excluir o quiz "${quiz.title}"?`)) {
             soundFx.playClick();
-            // 1. Remove do LocalStorage
+            // 1. Remove do LocalStorage particionado
+            const storageKey = this.getStorageKey();
             const updated = this.getSavedQuizzes().filter(q => q.id !== quiz.id);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            localStorage.setItem(storageKey, JSON.stringify(updated));
 
-            // 2. Remove do Firebase Firestore
-            if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+            // 2. Remove do Firebase Firestore (se usuário tiver permissão / autenticado)
+            const user = this.app?.authManager?.currentUser;
+            if (user && !user.isGuest && serverlessDB.isCloudEnabled && serverlessDB.firestore) {
               try {
                 const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
                 await deleteDoc(doc(serverlessDB.firestore, 'user_quizzes', quiz.id));

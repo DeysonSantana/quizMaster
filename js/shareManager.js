@@ -16,6 +16,7 @@ function minifyQuizPayload(quizData) {
     t: quizData.title || 'Quiz Personalizado',
     u: quizData.author || 'Criador',
     s: typeof quizData.timerSeconds === 'number' ? quizData.timerSeconds : 20,
+    m: quizData.scoringMode || 'speed_and_accuracy',
     q: (quizData.questions || []).map(item => [
       item.question || '',
       item.category || 'Geral',
@@ -41,6 +42,7 @@ function unminifyQuizPayload(minified) {
   const title = minified.t || minified.title || 'Quiz Personalizado';
   const author = minified.u || minified.author || 'Criador';
   const timerSeconds = typeof minified.s === 'number' ? minified.s : 20;
+  const scoringMode = minified.m || minified.scoringMode || 'speed_and_accuracy';
   const rawQuestions = minified.q || minified.questions || [];
 
   const questions = rawQuestions.map((item, idx) => {
@@ -80,6 +82,7 @@ function unminifyQuizPayload(minified) {
     title: title,
     author: author,
     timerSeconds: timerSeconds,
+    scoringMode: scoringMode,
     questions: questions
   };
 }

@@ -29,6 +29,7 @@ class QuizApp {
     this.timerRemaining = 20;
     this.timerInterval = null;
     this.soundEnabled = true;
+    this.scoringMode = 'speed_and_accuracy'; // 'speed_and_accuracy' | 'correct_only' | 'speed_only'
     
     // Elementos DOM
     this.screens = {
@@ -74,6 +75,7 @@ class QuizApp {
       startBtn: document.getElementById('start-btn'),
       startBtnText: document.getElementById('start-btn-text'),
       welcomeTimerSelect: document.getElementById('welcome-timer-select'),
+      welcomeScoringModeSelect: document.getElementById('welcome-scoring-mode-select'),
       joinRoomBtn: document.getElementById('join-room-btn'),
       roomPinInput: document.getElementById('room-pin-input'),
       pinFeedback: document.getElementById('pin-feedback'),
@@ -148,6 +150,13 @@ class QuizApp {
         this.timerEnabled = true;
         if (this.dom.welcomeTimerSelect) {
           this.dom.welcomeTimerSelect.value = sharedData.timerSeconds;
+        }
+      }
+
+      if (sharedData.scoringMode) {
+        this.scoringMode = sharedData.scoringMode;
+        if (this.dom.welcomeScoringModeSelect) {
+          this.dom.welcomeScoringModeSelect.value = sharedData.scoringMode;
         }
       }
 
@@ -236,6 +245,12 @@ class QuizApp {
     } else if (this.dom.timerToggleCheckbox) {
       this.dom.timerToggleCheckbox.addEventListener('change', (e) => {
         this.timerEnabled = e.target.checked;
+      });
+    }
+
+    if (this.dom.welcomeScoringModeSelect) {
+      this.dom.welcomeScoringModeSelect.addEventListener('change', (e) => {
+        this.scoringMode = e.target.value;
       });
     }
 
@@ -820,20 +835,55 @@ class QuizApp {
       }
     });
 
-    // Pontuação e Gamificação
-    if (isCorrect) {
-      this.streak++;
-      if (this.streak > this.maxStreak) this.maxStreak = this.streak;
+    // Pontuação e Gamificação segundo o Modo Escolhido
+    let difficultyMultiplier = q.difficulty === 'Fácil' ? 1 : q.difficulty === 'Médio' ? 1.5 : 2;
+    let pointsAwarded = 0;
 
-      // Cálculo de pontos: Base (100) + Dificuldade + Combo + Bônus de tempo
-      let difficultyMultiplier = q.difficulty === 'Fácil' ? 1 : q.difficulty === 'Médio' ? 1.5 : 2;
-      let timeBonus = this.timerEnabled ? Math.max(0, this.timerRemaining * 5) : 0;
-      let streakBonus = (this.streak - 1) * 20;
-      let pointsAwarded = Math.round((100 * difficultyMultiplier) + streakBonus + timeBonus);
+    if (this.scoringMode === 'correct_only') {
+      // 1. Apenas por questões certas (pontuação fixa por acerto sem pressão de tempo)
+      if (isCorrect) {
+        this.streak++;
+        if (this.streak > this.maxStreak) this.maxStreak = this.streak;
+        pointsAwarded = Math.round(100 * difficultyMultiplier);
+      } else {
+        this.streak = 0;
+        pointsAwarded = 0;
+      }
+    } else if (this.scoringMode === 'speed_only') {
+      // 2. Quem responde mais rápido (foco na agilidade e tempo de resposta)
+      const maxSeconds = this.timerSeconds > 0 ? this.timerSeconds : 20;
+      const timeRatio = this.timerEnabled ? Math.max(0.1, this.timerRemaining / maxSeconds) : 0.8;
 
+      if (isCorrect) {
+        this.streak++;
+        if (this.streak > this.maxStreak) this.maxStreak = this.streak;
+        // Ganha bônus de agilidade alta + acerto
+        pointsAwarded = Math.round((120 * timeRatio * difficultyMultiplier) + 50);
+      } else {
+        this.streak = 0;
+        // Ganha pontos proporcionais à velocidade da tentativa (reduzido)
+        pointsAwarded = Math.round(35 * timeRatio);
+      }
+    } else {
+      // 3. Quem responder mais rápido e certo (Kahoot: Acerto + Bônus de Tempo + Combo)
+      if (isCorrect) {
+        this.streak++;
+        if (this.streak > this.maxStreak) this.maxStreak = this.streak;
+        let timeBonus = this.timerEnabled ? Math.max(0, this.timerRemaining * 5) : 0;
+        let streakBonus = (this.streak - 1) * 20;
+        pointsAwarded = Math.round((100 * difficultyMultiplier) + streakBonus + timeBonus);
+      } else {
+        this.streak = 0;
+        pointsAwarded = 0;
+      }
+    }
+
+    if (pointsAwarded > 0) {
       this.score += pointsAwarded;
       this.dom.scoreBadge.textContent = `${this.score} pts`;
+    }
 
+    if (isCorrect) {
       if (this.streak >= 3) {
         soundFx.playStreak();
         this.triggerMiniConfetti();
@@ -841,7 +891,6 @@ class QuizApp {
         soundFx.playCorrect();
       }
     } else {
-      this.streak = 0;
       soundFx.playWrong();
     }
 

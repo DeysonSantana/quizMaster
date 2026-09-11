@@ -20,6 +20,7 @@ export class RoomManager {
       roomQuizTitleDisplay: document.getElementById('room-quiz-title-display'),
       roomDurationSelect: document.getElementById('room-duration-select'),
       roomStartModeSelect: document.getElementById('room-start-mode-select'),
+      roomScoringModeSelect: document.getElementById('room-scoring-mode-select'),
       roomTitleInput: document.getElementById('room-title-input'),
       confirmCreateRoomBtn: document.getElementById('confirm-create-room-btn'),
 
@@ -27,6 +28,7 @@ export class RoomManager {
       roomInfoModal: document.getElementById('room-info-modal'),
       closeRoomInfoBtn: document.getElementById('close-room-info-btn'),
       roomPinDisplay: document.getElementById('room-pin-display'),
+      roomScoringBadge: document.getElementById('room-scoring-badge'),
       roomDirectUrlInput: document.getElementById('room-direct-url-input'),
       copyRoomUrlBtn: document.getElementById('copy-room-url-btn'),
       copyRoomFeedback: document.getElementById('copy-room-feedback'),
@@ -190,6 +192,7 @@ export class RoomManager {
 
     const durationMinutes = parseInt(this.dom.roomDurationSelect.value, 10);
     const startMode = this.dom.roomStartModeSelect ? this.dom.roomStartModeSelect.value : 'host_controlled';
+    const scoringMode = this.dom.roomScoringModeSelect ? this.dom.roomScoringModeSelect.value : 'speed_and_accuracy';
     const roomTitle = (this.dom.roomTitleInput.value || '').trim() || this.pendingRoomQuizData.title;
 
     // Gera PIN de 6 dígitos único
@@ -197,13 +200,21 @@ export class RoomManager {
     const now = Date.now();
     const expiresAt = durationMinutes > 0 ? now + durationMinutes * 60 * 1000 : null;
 
+    const user = this.app?.authManager?.currentUser;
+    const isGuest = !!user?.isGuest;
+    const hostId = user ? user.uid : 'guest';
+    const hostEmail = user && !isGuest ? (user.email || null) : null;
+
     const roomData = {
       pin: pin,
       title: roomTitle,
       quizTitle: this.pendingRoomQuizData.title,
-      author: this.pendingRoomQuizData.author || 'Professor',
+      author: this.pendingRoomQuizData.author || (user ? user.name : 'Professor'),
+      hostId: hostId,
+      hostEmail: hostEmail,
       questions: this.pendingRoomQuizData.questions,
       startMode: startMode,
+      scoringMode: scoringMode,
       status: (startMode === 'open') ? 'active' : 'waiting',
       createdAt: new Date(now).toISOString(),
       expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
@@ -219,7 +230,18 @@ export class RoomManager {
   }
 
   async saveRoom(roomData) {
-    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+    const user = this.app?.authManager?.currentUser;
+    const isGuest = !!user?.isGuest;
+    const currentUid = user?.uid;
+
+    if (!roomData.hostId) {
+      roomData.hostId = currentUid || 'guest';
+    }
+    if (!roomData.hostEmail && user && !isGuest) {
+      roomData.hostEmail = user.email || null;
+    }
+
+    if (!isGuest && currentUid && serverlessDB.isCloudEnabled && serverlessDB.firestore) {
       try {
         const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
         await setDoc(doc(serverlessDB.firestore, 'quiz_rooms', roomData.pin), roomData);
@@ -292,6 +314,7 @@ export class RoomManager {
         a: roomData.author || 'Professor',
         e: roomData.expiresAt || null,
         m: roomData.startMode || 'host_controlled',
+        sc: roomData.scoringMode || 'speed_and_accuracy',
         s: roomData.status || 'waiting',
         k: (roomData.questions || []).map(item => [
           item.question || '',
@@ -327,6 +350,17 @@ export class RoomManager {
 
     if (this.dom.roomPinDisplay) this.dom.roomPinDisplay.textContent = roomData.pin;
     if (this.dom.roomDirectUrlInput) this.dom.roomDirectUrlInput.value = roomDirectPinUrl;
+
+    if (this.dom.roomScoringBadge) {
+      const mode = roomData.scoringMode || 'speed_and_accuracy';
+      if (mode === 'correct_only') {
+        this.dom.roomScoringBadge.textContent = '🎯 Apenas Acertos';
+      } else if (mode === 'speed_only') {
+        this.dom.roomScoringBadge.textContent = '⚡ Mais Rápido';
+      } else {
+        this.dom.roomScoringBadge.textContent = '🏆 Rápido e Certo';
+      }
+    }
 
     if (this.dom.roomExpiresText) {
       if (roomData.expiresAt) {
@@ -600,6 +634,7 @@ export class RoomManager {
             author: parsed.a || 'Professor',
             expiresAt: parsed.e || null,
             startMode: parsed.m || 'host_controlled',
+            scoringMode: parsed.sc || 'speed_and_accuracy',
             status: parsed.s || 'waiting',
             active: true,
             createdAt: new Date().toISOString(),
@@ -643,15 +678,28 @@ export class RoomManager {
     this.openModal(this.dom.myRoomsModal);
     if (window.lucide) window.lucide.createIcons();
 
+    const user = this.app?.authManager?.currentUser;
+    const currentUid = user?.uid;
+    const isGuest = !!user?.isGuest;
+
     let rooms = serverlessDB.getLocalRooms();
+    if (currentUid && !isGuest) {
+      rooms = rooms.filter(r => r.hostId === currentUid || !r.hostId);
+    } else if (isGuest && currentUid) {
+      rooms = rooms.filter(r => r.hostId === currentUid || r.hostId === 'guest');
+    } else {
+      rooms = rooms.filter(r => !r.hostId || r.hostId === 'guest');
+    }
+
     const allScores = serverlessDB.getLocalScores();
     const roomScoreCounts = new Map();
 
-    // Sincroniza salas do Firebase Cloud Firestore
-    if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+    // Sincroniza salas do Firebase Cloud Firestore APENAS para o host autenticado
+    if (!isGuest && currentUid && serverlessDB.isCloudEnabled && serverlessDB.firestore) {
       try {
-        const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
-        const snap = await getDocs(collection(serverlessDB.firestore, 'quiz_rooms'));
+        const { collection, getDocs, query, where } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+        const q = query(collection(serverlessDB.firestore, 'quiz_rooms'), where('hostId', '==', currentUid));
+        const snap = await getDocs(q);
         const cloudRooms = [];
         snap.forEach(docSnap => cloudRooms.push(docSnap.data()));
 
@@ -659,7 +707,9 @@ export class RoomManager {
           const roomMap = new Map();
           rooms.forEach(r => roomMap.set(r.pin, r));
           cloudRooms.forEach(r => roomMap.set(r.pin, r));
-          rooms = Array.from(roomMap.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          rooms = Array.from(roomMap.values())
+            .filter(r => r.hostId === currentUid || !r.hostId)
+            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
           serverlessDB.saveLocalRooms(rooms);
         }
 

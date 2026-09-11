@@ -7,15 +7,13 @@ const STORAGE_API_KEY = 'QUIZMASTER_AI_API_KEY';
 const STORAGE_AI_PROVIDER = 'QUIZMASTER_AI_PROVIDER';
 
 // Lista de modelos Gemini suportados em ordem de preferência
+// Lista de modelos Gemini modernos suportados (ordem de prioridade e alta disponibilidade)
 const GEMINI_CANDIDATE_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-exp',
-  'gemini-1.5-flash-latest',
   'gemini-1.5-flash',
-  'gemini-1.5-pro-latest',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash-8b',
   'gemini-1.5-pro',
-  'gemini-pro'
+  'gemini-2.0-flash-lite-preview-02-05'
 ];
 
 export class AIService {
@@ -160,23 +158,32 @@ Lembre-se: Todas as perguntas devem ter 4 alternativas sem pegadinhas inúteis e
    * Chamada resiliente à API do Google Gemini com teste automático de modelos
    */
   async callGeminiWithFallback(systemInstruction, userPrompt, format = 'multiple_choice') {
-    // 1. Se já sabemos um modelo que funciona nesta sessão, tenta ele primeiro
-    const modelsToTry = this.cachedWorkingModel 
-      ? [this.cachedWorkingModel, ...GEMINI_CANDIDATE_MODELS.filter(m => m !== this.cachedWorkingModel)]
-      : [...GEMINI_CANDIDATE_MODELS];
-
-    let lastError = null;
+    let modelsToTry = [...GEMINI_CANDIDATE_MODELS];
 
     // Tenta primeiro descobrir a lista oficial de modelos disponíveis para a chave do usuário
     try {
       const availableModels = await this.fetchAvailableGeminiModels();
       if (availableModels.length > 0) {
-        // Coloca os modelos disponíveis no início da fila
-        modelsToTry.unshift(...availableModels.filter(m => !modelsToTry.includes(m)));
+        // Ordena availableModels dando prioridade aos modelos Flash mais rápidos e estáveis
+        const preferred = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro', 'gemini-2.0-flash-lite-preview-02-05'];
+        const sorted = [
+          ...preferred.filter(p => availableModels.includes(p)),
+          ...availableModels.filter(m => !preferred.includes(m))
+        ];
+        if (sorted.length > 0) {
+          modelsToTry = sorted;
+        }
       }
     } catch (e) {
-      console.warn('Não foi possível listar modelos via ListModels, usando lista estática de candidatos:', e);
+      console.warn('Não foi possível listar modelos via ListModels, usando lista padrão de candidatos:', e);
     }
+
+    // Se já sabemos um modelo que funcionou nesta sessão, coloca no topo
+    if (this.cachedWorkingModel) {
+      modelsToTry = [this.cachedWorkingModel, ...modelsToTry.filter(m => m !== this.cachedWorkingModel)];
+    }
+
+    let lastError = null;
 
     for (const model of modelsToTry) {
       try {
@@ -188,11 +195,22 @@ Lembre-se: Todas as perguntas devem ter 4 alternativas sem pegadinhas inúteis e
       } catch (err) {
         console.warn(`Modelo ${model} falhou:`, err.message);
         lastError = err;
-        // Se o erro for de autenticação (400 ou 403 API key inválida), não adianta tentar outros modelos
-        if (err.message && (err.message.includes('API_KEY_INVALID') || err.message.includes('403') || err.message.includes('API key not valid'))) {
-          throw new Error('Sua chave de API do Google Gemini é inválida ou expirou. Verifique sua chave no Google AI Studio.');
+
+        // Se o erro for de autenticação (API key inválida), encerra imediatamente com instrução clara
+        if (err.message && (err.message.includes('API_KEY_INVALID') || err.message.includes('403') || err.message.includes('API key not valid') || err.message.includes('PERMISSION_DENIED'))) {
+          throw new Error('Sua chave de API do Google Gemini é inválida, não possui permissões ou expirou. Obtenha uma nova chave gratuita em <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline text-purple-300 font-bold">aistudio.google.com/app/apikey</a>.');
+        }
+
+        // Se for erro de cota (429 / RESOURCE_EXHAUSTED)
+        if (err.message && (err.message.includes('RESOURCE_EXHAUSTED') || err.message.includes('429') || err.message.includes('Quota exceeded'))) {
+          // Continua tentando outros modelos que possam ter cota separada (ex: flash vs pro)
+          continue;
         }
       }
+    }
+
+    if (lastError && (lastError.message.includes('429') || lastError.message.includes('RESOURCE_EXHAUSTED'))) {
+      throw new Error('Limite de requisições gratuitas atingido no Google Gemini (Quota 429). Aguarde alguns instantes ou gere uma nova chave no Google AI Studio.');
     }
 
     throw new Error(lastError ? lastError.message : 'Nenhum modelo Gemini compatível pôde ser acessado com sua chave de API.');
@@ -202,62 +220,84 @@ Lembre-se: Todas as perguntas devem ter 4 alternativas sem pegadinhas inúteis e
    * Lista os modelos compatíveis com generateContent para a chave informada
    */
   async fetchAvailableGeminiModels() {
-    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(this.apiKey)}`;
-    const res = await fetch(listUrl);
-    if (!res.ok) return [];
+    try {
+      const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(this.apiKey)}`;
+      const res = await fetch(listUrl);
+      if (!res.ok) return [];
 
-    const data = await res.json();
-    if (!data.models || !Array.isArray(data.models)) return [];
+      const data = await res.json();
+      if (!data.models || !Array.isArray(data.models)) return [];
 
-    return data.models
-      .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
-      .map(m => m.name.replace(/^models\//, ''));
+      return data.models
+        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => m.name.replace(/^models\//, ''))
+        .filter(name => !name.includes('embedding') && !name.includes('aqa') && !name.includes('imagen') && !name.includes('text-embedding'));
+    } catch (e) {
+      return [];
+    }
   }
 
   /**
-   * Executa a requisição para um modelo Gemini específico
+   * Executa a requisição para um modelo Gemini específico (com fallback de endpoints v1beta e v1)
    */
   async trySingleGeminiModel(model, systemInstruction, userPrompt, format = 'multiple_choice') {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(this.apiKey)}`;
+    const endpoints = [
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(this.apiKey)}`,
+      `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${encodeURIComponent(this.apiKey)}`
+    ];
 
-    const body = {
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: systemInstruction + '\n\n' + userPrompt }
-          ]
+    let lastErr = null;
+
+    for (const url of endpoints) {
+      try {
+        const body = {
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: systemInstruction + '\n\n' + userPrompt }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            topP: 0.95
+          }
+        };
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          const errMsg = errData.error && errData.error.message ? errData.error.message : response.statusText;
+          throw new Error(`(${response.status}) ${errMsg}`);
         }
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        topP: 0.95
+
+        const data = await response.json();
+        const candidate = data.candidates && data.candidates[0];
+        const textOutput = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;
+
+        if (!textOutput) {
+          throw new Error('A I.A não retornou uma resposta válida.');
+        }
+
+        return this.parseAndValidateQuizResponse(textOutput, format);
+      } catch (err) {
+        lastErr = err;
+        // Se o erro foi 404 (modelo não existe neste endpoint v1beta/v1), tenta o próximo endpoint
+        if (!err.message.includes('(404)')) {
+          throw err;
+        }
       }
-    };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      const errMsg = errData.error && errData.error.message ? errData.error.message : response.statusText;
-      throw new Error(`(${response.status}) ${errMsg}`);
     }
 
-    const data = await response.json();
-    const candidate = data.candidates && data.candidates[0];
-    const textOutput = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;
-
-    if (!textOutput) {
-      throw new Error('A I.A não retornou uma resposta válida.');
-    }
-
-    return this.parseAndValidateQuizResponse(textOutput, format);
+    throw lastErr || new Error(`Modelo ${model} não suportado para geração.`);
   }
 
   /**

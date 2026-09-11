@@ -42,6 +42,7 @@ export class LeaderboardManager {
       // Waiting Lobby Modal (Início Controlado pelo Host)
       waitingLobbyModal: document.getElementById('player-waiting-lobby-modal'),
       lobbyRoomPinBadge: document.getElementById('lobby-room-pin-badge'),
+      lobbyScoringBadge: document.getElementById('lobby-scoring-badge'),
       lobbyRoomTitle: document.getElementById('lobby-room-title'),
       lobbyPlayerCountBadge: document.getElementById('lobby-player-count-badge'),
       lobbyParticipantsList: document.getElementById('lobby-participants-list'),
@@ -265,6 +266,17 @@ export class LeaderboardManager {
     if (this.dom.lobbyRoomTitle) this.dom.lobbyRoomTitle.textContent = room.title;
     if (this.dom.lobbyRoomPinBadge) this.dom.lobbyRoomPinBadge.textContent = `PIN: ${room.pin}`;
 
+    if (this.dom.lobbyScoringBadge) {
+      const mode = room.scoringMode || 'speed_and_accuracy';
+      if (mode === 'correct_only') {
+        this.dom.lobbyScoringBadge.textContent = '🎯 Apenas Acertos';
+      } else if (mode === 'speed_only') {
+        this.dom.lobbyScoringBadge.textContent = '⚡ Mais Rápido';
+      } else {
+        this.dom.lobbyScoringBadge.textContent = '🏆 Rápido e Certo';
+      }
+    }
+
     if (this.dom.waitingLobbyModal) {
       this.dom.waitingLobbyModal.classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
@@ -381,10 +393,16 @@ export class LeaderboardManager {
   }
 
   launchGameForPlayer() {
-    // Carrega perguntas da sala no motor de jogo
+    // Carrega perguntas e modo de pontuação da sala no motor de jogo
     this.app.activeQuestions = this.activeRoomForPlayer.questions;
     this.app.isCustomQuiz = true;
     this.app.customFileName = `${this.activeRoomForPlayer.title} (PIN: ${this.activeRoomForPlayer.pin})`;
+    if (this.activeRoomForPlayer.scoringMode) {
+      this.app.scoringMode = this.activeRoomForPlayer.scoringMode;
+      if (this.app.dom.welcomeScoringModeSelect) {
+        this.app.dom.welcomeScoringModeSelect.value = this.activeRoomForPlayer.scoringMode;
+      }
+    }
     this.app.dom.quizSourceLabel.innerHTML = `🎮 <strong class="text-indigo-400">${this.activeRoomForPlayer.title}</strong> • Jogador: <strong class="text-pink-400">${this.selectedPlayerAvatar} ${this.playerNickname}</strong>`;
     this.app.dom.resetDefaultQuizBtn.classList.remove('hidden');
 

@@ -408,20 +408,33 @@
           </div>
         </div>
 
-        <!-- Opções Rápidas de Temporizador -->
-        <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
-          <label for="welcome-timer-select" class="text-xs text-gray-400 flex items-center gap-1.5 font-medium cursor-pointer">
-            <i data-lucide="timer" class="w-3.5 h-3.5 text-indigo-400"></i> Tempo por pergunta:
-          </label>
-          <select id="welcome-timer-select" class="px-3 py-1.5 rounded-xl bg-gray-900/90 border border-gray-700 text-xs font-semibold text-indigo-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
-            <option value="5">⚡ 5 segundos (Super Rápido)</option>
-            <option value="10">⏱️ 10 segundos (Rápido)</option>
-            <option value="15">⏱️ 15 segundos</option>
-            <option value="20" selected>⏱️ 20 segundos (Padrão)</option>
-            <option value="25">⏱️ 25 segundos</option>
-            <option value="30">⏱️ 30 segundos (Tranquilo)</option>
-            <option value="0">🛑 Sem tempo (Livre)</option>
-          </select>
+        <!-- Opções Rápidas de Configuração de Partida (Tempo & Modo de Pontuação) -->
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-1">
+          <div class="flex items-center gap-1.5">
+            <label for="welcome-timer-select" class="text-xs text-gray-400 flex items-center gap-1 font-medium cursor-pointer">
+              <i data-lucide="timer" class="w-3.5 h-3.5 text-indigo-400"></i> Tempo:
+            </label>
+            <select id="welcome-timer-select" class="px-2.5 py-1.5 rounded-xl bg-gray-900/90 border border-gray-700 text-xs font-semibold text-indigo-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+              <option value="5">⚡ 5s (Super Rápido)</option>
+              <option value="10">⏱️ 10s (Rápido)</option>
+              <option value="15">⏱️ 15s</option>
+              <option value="20" selected>⏱️ 20s (Padrão)</option>
+              <option value="25">⏱️ 25s</option>
+              <option value="30">⏱️ 30s (Tranquilo)</option>
+              <option value="0">🛑 Sem tempo</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <label for="welcome-scoring-mode-select" class="text-xs text-gray-400 flex items-center gap-1 font-medium cursor-pointer">
+              <i data-lucide="award" class="w-3.5 h-3.5 text-pink-400"></i> Pontuação:
+            </label>
+            <select id="welcome-scoring-mode-select" class="px-2.5 py-1.5 rounded-xl bg-gray-900/90 border border-gray-700 text-xs font-semibold text-pink-300 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition-colors">
+              <option value="speed_and_accuracy" selected>🏆 Rápido e Certo (Kahoot)</option>
+              <option value="correct_only">🎯 Apenas Questões Certas</option>
+              <option value="speed_only">⚡ Quem Responde Mais Rápido</option>
+            </select>
+          </div>
         </div>
 
         <!-- Botão Iniciar -->
@@ -582,7 +595,7 @@
 
   <!-- Footer -->
   <footer class="w-full border-t border-gray-800/80 bg-gray-950/40 py-4 text-center text-xs text-gray-500">
-    <p>Quiz de Conhecimentos Gerais &bull; Desenvolvido para Gamificação Educacional | v2.4.0</p>
+    <p>Quiz de Conhecimentos Gerais &bull; Desenvolvido para Gamificação Educacional | v2.5.0</p>
   </footer>
 
   <!-- MODAL 1: CRIADOR VISUAL DE QUIZ -->
@@ -1238,6 +1251,16 @@
           <p class="text-[10px] text-gray-400 mt-1">No modo controlado, os alunos entram no lobby e você clica quando todos estiverem prontos!</p>
         </div>
 
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Critério de Pontuação da Sala</label>
+          <select id="room-scoring-mode-select" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-xs sm:text-sm text-pink-300 font-semibold focus:border-pink-500">
+            <option value="speed_and_accuracy" selected>🏆 Rápido e Certo (Kahoot: Acerto + Tempo + Combo)</option>
+            <option value="correct_only">🎯 Apenas Questões Certas (Pontuação Fixa por Acerto)</option>
+            <option value="speed_only">⚡ Quem Responde Mais Rápido (Foco na Velocidade)</option>
+          </select>
+          <p class="text-[10px] text-gray-400 mt-1">Define como as pontuações e posições no ranking ao vivo serão calculadas.</p>
+        </div>
+
         <div class="flex items-center justify-between gap-2.5 pt-2 border-t border-gray-800">
           <button type="button" id="cancel-create-room-btn" class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-300 transition-colors">
             Cancelar
@@ -1256,7 +1279,10 @@
     <div class="glass-card w-full max-w-lg rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 my-auto animate-slide-up border border-amber-500/40 text-center">
       <div class="flex items-center justify-between border-b border-gray-800 pb-3 text-left">
         <div>
-          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Sala de Desafio Ativa</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Sala de Desafio Ativa</span>
+            <span id="room-scoring-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30 font-semibold">🏆 Rápido e Certo</span>
+          </div>
           <h3 class="font-display font-bold text-base sm:text-lg text-white">Compartilhe com os Jogadores</h3>
         </div>
         <button id="close-room-info-btn" class="p-1 rounded-lg text-gray-400 hover:text-white transition-colors">
@@ -1343,7 +1369,10 @@
         ⏳
       </div>
       <div>
-        <span id="lobby-room-pin-badge" class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">PIN: 000000</span>
+        <div class="flex items-center justify-center gap-2">
+          <span id="lobby-room-pin-badge" class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">PIN: 000000</span>
+          <span id="lobby-scoring-badge" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30">🏆 Rápido e Certo</span>
+        </div>
         <h3 id="lobby-room-title" class="font-display font-bold text-lg sm:text-xl text-white mt-2 truncate">Sala de Desafio</h3>
         <p class="text-xs text-indigo-300 mt-1 font-medium">Você está conectado! Aguarde o professor iniciar a partida para todos...</p>
       </div>
