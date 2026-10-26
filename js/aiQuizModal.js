@@ -71,11 +71,15 @@ export class AIQuizModal {
 
     // Salvar Chave de API
     if (this.dom.saveApiKeyBtn) {
-      this.dom.saveApiKeyBtn.addEventListener('click', () => {
+      this.dom.saveApiKeyBtn.addEventListener('click', async () => {
         soundFx.playClick();
         const key = this.dom.apiKeyInput.value.trim();
         if (key) {
-          aiService.setApiKey(key);
+          if (this.app?.authManager) {
+            await this.app.authManager.saveAccountApiKey(key);
+          } else {
+            aiService.setApiKey(key);
+          }
           this.updateKeyStatusUI();
           this.showError('');
         } else {
@@ -135,7 +139,7 @@ export class AIQuizModal {
   }
 
   openModal() {
-    this.dom.apiKeyInput.value = aiService.getApiKey();
+    this.dom.apiKeyInput.value = (this.app?.authManager ? this.app.authManager.getAccountApiKey() : '') || aiService.getApiKey();
     this.updateKeyStatusUI();
     this.dom.errorMsg.classList.add('hidden');
     this.dom.loadingContainer.classList.add('hidden');
@@ -151,10 +155,13 @@ export class AIQuizModal {
   }
 
   updateKeyStatusUI() {
-    const key = aiService.getApiKey();
+    const key = (this.app?.authManager ? this.app.authManager.getAccountApiKey() : '') || aiService.getApiKey();
     if (this.dom.aiKeyStatus) {
       if (key) {
-        this.dom.aiKeyStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> <span class="text-emerald-400 font-semibold">Chave de API salva e configurada!</span>`;
+        const isGuest = !this.app?.authManager?.currentUser || !!this.app?.authManager?.currentUser.isGuest;
+        this.dom.aiKeyStatus.innerHTML = isGuest
+          ? `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> <span class="text-emerald-400 font-semibold">Chave de API salva neste aparelho!</span>`
+          : `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> <span class="text-emerald-400 font-semibold">Chave de API guardada na sua conta! ☁️</span>`;
       } else {
         this.dom.aiKeyStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> <span class="text-amber-300">Chave de API necessária para gerar com I.A</span>`;
       }

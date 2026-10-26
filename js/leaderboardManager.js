@@ -189,6 +189,22 @@ export class LeaderboardManager {
     this.playerNickname = nick;
     this.closeNicknameModal();
 
+    // Sincroniza apelido e avatar escolhidos com o perfil local
+    if (this.app.authManager) {
+      if (!this.app.authManager.currentUser) {
+        this.app.authManager.currentUser = this.app.authManager.getDefaultGuestUser();
+      }
+      if (this.app.authManager.currentUser.isGuest) {
+        this.app.authManager.currentUser.name = this.playerNickname;
+        this.app.authManager.currentUser.avatarEmoji = this.selectedPlayerAvatar || '🎓';
+        this.app.authManager.setLocalAvatar(this.selectedPlayerAvatar || '🎓');
+        this.app.authManager.setLocalNickname(this.playerNickname);
+        this.app.authManager.saveSessionUser(this.app.authManager.currentUser);
+        this.app.authManager.updateUI();
+        this.app.authManager.notifyListeners();
+      }
+    }
+
     // 1. Registra participante na sala
     const participantId = (this.app.authManager && this.app.authManager.currentUser && this.app.authManager.currentUser.uid) 
       || ('p_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));

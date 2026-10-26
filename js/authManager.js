@@ -4,8 +4,12 @@
  */
 import { serverlessDB } from './firebaseConfig.js';
 import { soundFx } from './audio.js';
+import { aiService } from './aiService.js';
 
 const STORAGE_SESSION_USER = 'QUIZMASTER_SESSION_USER';
+const STORAGE_LOCAL_AVATAR = 'QUIZMASTER_LOCAL_AVATAR';
+const STORAGE_LOCAL_NICKNAME = 'QUIZMASTER_LOCAL_NICKNAME';
+const STORAGE_GUEST_ID = 'QUIZMASTER_GUEST_ID';
 
 export const AVATAR_EMOJIS = [
   '🎓', '🧠', '📚', '🔬', '🧪', '💡', '🎨', '🏛️',
@@ -20,7 +24,7 @@ export class AuthManager {
     this.app = app;
     this.currentUser = this.loadSessionUser();
     this.authListeners = [];
-    this.selectedGuestEmoji = '🎓';
+    this.selectedGuestEmoji = this.getLocalAvatar();
 
     this.dom = {
       // Header Auth Elements
@@ -28,6 +32,13 @@ export class AuthManager {
       userProfileBtn: document.getElementById('header-user-profile-btn'),
       userAvatarText: document.getElementById('header-user-avatar-text'),
       userDisplayName: document.getElementById('header-user-name'),
+      mobileUserProfileBtn: document.getElementById('mobile-user-profile-btn'),
+      mobileUserAvatarText: document.getElementById('mobile-user-avatar-text'),
+
+      // Welcome Screen Player Badge
+      welcomePlayerBadgeBtn: document.getElementById('welcome-player-badge-btn'),
+      welcomePlayerAvatarText: document.getElementById('welcome-player-avatar-text'),
+      welcomePlayerNameText: document.getElementById('welcome-player-name-text'),
 
       // Auth Modal
       authModal: document.getElementById('auth-modal'),
@@ -60,8 +71,16 @@ export class AuthManager {
       closeProfileModalBtn: document.getElementById('close-profile-modal-btn'),
       profileEmailText: document.getElementById('profile-email-text'),
       profileNameText: document.getElementById('profile-name-text'),
+      profileNicknameInput: document.getElementById('profile-nickname-input'),
+      profileLoginPromptBtn: document.getElementById('profile-login-prompt-btn'),
       profileAvatarDisplay: document.getElementById('profile-avatar-display'),
       profileEmojiGrid: document.getElementById('profile-emoji-grid'),
+      profileApiKeyInput: document.getElementById('profile-api-key-input'),
+      profileApiKeyBadge: document.getElementById('profile-api-key-badge'),
+      profileToggleKeyVisibilityBtn: document.getElementById('profile-toggle-key-visibility-btn'),
+      profileSaveApiKeyBtn: document.getElementById('profile-save-api-key-btn'),
+      profileClearApiKeyBtn: document.getElementById('profile-clear-api-key-btn'),
+      profileApiKeyFeedback: document.getElementById('profile-api-key-feedback'),
       profileThemeBtn: document.getElementById('profile-theme-btn'),
       logoutBtn: document.getElementById('profile-logout-btn'),
       deleteAccountBtn: document.getElementById('profile-delete-account-btn'),
@@ -81,6 +100,127 @@ export class AuthManager {
     this.init();
   }
 
+  getLocalAvatar() {
+    try {
+      return localStorage.getItem(STORAGE_LOCAL_AVATAR) || '🎓';
+    } catch (e) {
+      return '🎓';
+    }
+  }
+
+  setLocalAvatar(emoji) {
+    try {
+      localStorage.setItem(STORAGE_LOCAL_AVATAR, emoji);
+    } catch (e) {}
+  }
+
+  getLocalNickname() {
+    try {
+      return localStorage.getItem(STORAGE_LOCAL_NICKNAME) || 'Jogador';
+    } catch (e) {
+      return 'Jogador';
+    }
+  }
+
+  setLocalNickname(name) {
+    try {
+      localStorage.setItem(STORAGE_LOCAL_NICKNAME, name);
+    } catch (e) {}
+  }
+
+  getDefaultGuestUser() {
+    let guestId = null;
+    try {
+      guestId = localStorage.getItem(STORAGE_GUEST_ID);
+      if (!guestId) {
+        guestId = 'guest_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem(STORAGE_GUEST_ID, guestId);
+      }
+    } catch (e) {
+      guestId = 'guest_local';
+    }
+
+    return {
+      uid: guestId,
+      name: this.getLocalNickname(),
+      email: 'Convidado',
+      isGuest: true,
+      avatarEmoji: this.getLocalAvatar(),
+      provider: 'guest'
+    };
+  }
+
+  getAccountApiKey() {
+    if (this.currentUser && !this.currentUser.isGuest) {
+      if (this.currentUser.geminiApiKey) return this.currentUser.geminiApiKey;
+      const cached = localStorage.getItem(`QUIZMASTER_USER_AI_KEY_${this.currentUser.uid}`);
+      if (cached) return cached;
+    }
+    return localStorage.getItem('QUIZMASTER_AI_API_KEY') || '';
+  }
+
+  async saveAccountApiKey(key) {
+    const cleanKey = (key || '').trim();
+    const isGuest = !this.currentUser || !!this.currentUser.isGuest;
+    const currentUid = this.currentUser?.uid;
+
+    if (!isGuest && currentUid) {
+      this.currentUser.geminiApiKey = cleanKey;
+      if (cleanKey) {
+        localStorage.setItem(`QUIZMASTER_USER_AI_KEY_${currentUid}`, cleanKey);
+      } else {
+        localStorage.removeItem(`QUIZMASTER_USER_AI_KEY_${currentUid}`);
+      }
+      this.saveSessionUser(this.currentUser);
+
+      // Sincroniza com Firebase Cloud Firestore se autenticado com conta
+      if (serverlessDB.isCloudEnabled && serverlessDB.firestore) {
+        try {
+          const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+          await setDoc(doc(serverlessDB.firestore, 'user_profiles', currentUid), {
+            geminiApiKey: cleanKey,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        } catch (err) {
+          console.warn('Erro ao salvar chave de API no Firestore:', err);
+        }
+      }
+    } else {
+      if (cleanKey) {
+        localStorage.setItem('QUIZMASTER_AI_API_KEY', cleanKey);
+      } else {
+        localStorage.removeItem('QUIZMASTER_AI_API_KEY');
+      }
+    }
+
+    aiService.setApiKey(cleanKey);
+    this.updateProfileApiKeyUI();
+    this.notifyListeners();
+  }
+
+  async removeAccountApiKey() {
+    await this.saveAccountApiKey('');
+  }
+
+  updateProfileApiKeyUI() {
+    const key = this.getAccountApiKey();
+    if (this.dom.profileApiKeyInput) {
+      this.dom.profileApiKeyInput.value = key;
+    }
+    if (this.dom.profileApiKeyBadge) {
+      const isGuest = !this.currentUser || !!this.currentUser.isGuest;
+      if (key) {
+        this.dom.profileApiKeyBadge.className = 'text-[9px] px-1.5 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        this.dom.profileApiKeyBadge.innerHTML = isGuest 
+          ? '🟢 Salva neste aparelho' 
+          : '🟢 Guardada na sua Conta (Nuvem)';
+      } else {
+        this.dom.profileApiKeyBadge.className = 'text-[9px] px-1.5 py-0.5 rounded font-bold bg-gray-800 text-gray-400 border border-gray-700';
+        this.dom.profileApiKeyBadge.textContent = 'Não configurada';
+      }
+    }
+  }
+
   async init() {
     await serverlessDB.init();
     this.bindEvents();
@@ -89,19 +229,48 @@ export class AuthManager {
     // Se Firebase estiver ativo, escuta mudanças de auth
     if (serverlessDB.isCloudEnabled && serverlessDB.auth) {
       const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
-      onAuthStateChanged(serverlessDB.auth, (user) => {
+      onAuthStateChanged(serverlessDB.auth, async (user) => {
         if (user) {
+          let userEmoji = this.getLocalAvatar();
+          let userName = user.displayName || user.email.split('@')[0];
+          let userApiKey = localStorage.getItem(`QUIZMASTER_USER_AI_KEY_${user.uid}`) || '';
+
+          if (serverlessDB.firestore) {
+            try {
+              const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+              const profileSnap = await getDoc(doc(serverlessDB.firestore, 'user_profiles', user.uid));
+              if (profileSnap.exists()) {
+                const profileData = profileSnap.data();
+                if (profileData.avatarEmoji) userEmoji = profileData.avatarEmoji;
+                if (profileData.name) userName = profileData.name;
+                if (profileData.geminiApiKey) userApiKey = profileData.geminiApiKey;
+              }
+            } catch (err) {
+              console.warn('Erro ao carregar perfil do Firestore:', err);
+            }
+          }
+
           this.currentUser = {
             uid: user.uid,
             email: user.email,
-            name: user.displayName || user.email.split('@')[0],
+            name: userName,
+            avatarEmoji: userEmoji,
+            geminiApiKey: userApiKey,
+            isGuest: false,
             provider: 'firebase'
           };
+          this.setLocalAvatar(userEmoji);
+          if (userApiKey) {
+            localStorage.setItem(`QUIZMASTER_USER_AI_KEY_${user.uid}`, userApiKey);
+            aiService.setApiKey(userApiKey);
+          }
           this.saveSessionUser(this.currentUser);
         } else {
           if (this.currentUser && this.currentUser.provider === 'firebase') {
-            this.currentUser = null;
-            this.saveSessionUser(null);
+            this.currentUser = this.getDefaultGuestUser();
+            this.saveSessionUser(this.currentUser);
+            const fallbackKey = localStorage.getItem('QUIZMASTER_AI_API_KEY') || '';
+            aiService.setApiKey(fallbackKey);
           }
         }
         this.updateUI();
@@ -113,10 +282,26 @@ export class AuthManager {
   loadSessionUser() {
     try {
       const data = localStorage.getItem(STORAGE_SESSION_USER);
-      return data ? JSON.parse(data) : null;
-    } catch (e) {
-      return null;
-    }
+      if (data) {
+        const user = JSON.parse(data);
+        if (user) {
+          if (!user.avatarEmoji) {
+            user.avatarEmoji = this.getLocalAvatar();
+          }
+          if (user.geminiApiKey) {
+            aiService.setApiKey(user.geminiApiKey);
+          } else if (user.uid && !user.isGuest) {
+            const cachedKey = localStorage.getItem(`QUIZMASTER_USER_AI_KEY_${user.uid}`);
+            if (cachedKey) {
+              user.geminiApiKey = cachedKey;
+              aiService.setApiKey(cachedKey);
+            }
+          }
+          return user;
+        }
+      }
+    } catch (e) {}
+    return this.getDefaultGuestUser();
   }
 
   saveSessionUser(user) {
@@ -150,6 +335,138 @@ export class AuthManager {
         soundFx.playClick();
         this.openProfileModal();
       });
+    }
+
+    // Botão de Avatar Mobile
+    if (this.dom.mobileUserProfileBtn) {
+      this.dom.mobileUserProfileBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.openProfileModal();
+      });
+    }
+
+    // Badge do Jogador na Tela Inicial (Welcome)
+    if (this.dom.welcomePlayerBadgeBtn) {
+      this.dom.welcomePlayerBadgeBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.openProfileModal();
+      });
+    }
+
+    // Edição do Nickname no Modal de Perfil
+    if (this.dom.profileNicknameInput) {
+      const handleNameChange = (e) => {
+        const val = (e.target.value || '').trim();
+        if (val) {
+          if (!this.currentUser) this.currentUser = this.getDefaultGuestUser();
+          this.currentUser.name = val;
+          this.setLocalNickname(val);
+          this.saveSessionUser(this.currentUser);
+          this.updateUI();
+          this.notifyListeners();
+        }
+      };
+      this.dom.profileNicknameInput.addEventListener('change', handleNameChange);
+      this.dom.profileNicknameInput.addEventListener('blur', handleNameChange);
+      this.dom.profileNicknameInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+          handleNameChange(e);
+          this.dom.profileNicknameInput.blur();
+        }
+      });
+    }
+
+    // Botão Criar Conta / Login a partir do perfil de Convidado
+    if (this.dom.profileLoginPromptBtn) {
+      this.dom.profileLoginPromptBtn.addEventListener('click', () => {
+        soundFx.playClick();
+        this.closeProfileModal();
+        this.openAuthModal(false);
+      });
+    }
+
+    // Salvar Chave de API Google Gemini no Perfil
+    if (this.dom.profileSaveApiKeyBtn) {
+      this.dom.profileSaveApiKeyBtn.addEventListener('click', async () => {
+        soundFx.playClick();
+        const val = (this.dom.profileApiKeyInput?.value || '').trim();
+        if (!val) {
+          if (this.dom.profileApiKeyFeedback) {
+            this.dom.profileApiKeyFeedback.textContent = '⚠️ Insira uma chave de API antes de salvar.';
+            this.dom.profileApiKeyFeedback.className = 'text-[10px] font-semibold text-center text-amber-400 pt-0.5';
+            this.dom.profileApiKeyFeedback.classList.remove('hidden');
+          }
+          return;
+        }
+        await this.saveAccountApiKey(val);
+        soundFx.playSuccess();
+        if (this.dom.profileApiKeyFeedback) {
+          const isGuest = !this.currentUser || !!this.currentUser.isGuest;
+          this.dom.profileApiKeyFeedback.textContent = isGuest 
+            ? '✅ Chave salva neste dispositivo!' 
+            : '✅ Chave de API guardada na sua conta!';
+          this.dom.profileApiKeyFeedback.className = 'text-[10px] font-semibold text-center text-emerald-400 pt-0.5';
+          this.dom.profileApiKeyFeedback.classList.remove('hidden');
+          setTimeout(() => {
+            this.dom.profileApiKeyFeedback?.classList.add('hidden');
+          }, 3500);
+        }
+      });
+    }
+
+    // Remover Chave de API Google Gemini do Perfil
+    if (this.dom.profileClearApiKeyBtn) {
+      this.dom.profileClearApiKeyBtn.addEventListener('click', async () => {
+        soundFx.playClick();
+        await this.removeAccountApiKey();
+        if (this.dom.profileApiKeyFeedback) {
+          this.dom.profileApiKeyFeedback.textContent = 'Chave de API removida.';
+          this.dom.profileApiKeyFeedback.className = 'text-[10px] font-semibold text-center text-gray-400 pt-0.5';
+          this.dom.profileApiKeyFeedback.classList.remove('hidden');
+          setTimeout(() => {
+            this.dom.profileApiKeyFeedback?.classList.add('hidden');
+          }, 2500);
+        }
+      });
+    }
+
+    // Alternar visibilidade da chave de API no Perfil
+    if (this.dom.profileToggleKeyVisibilityBtn) {
+      this.dom.profileToggleKeyVisibilityBtn.addEventListener('click', () => {
+        if (!this.dom.profileApiKeyInput) return;
+        const type = this.dom.profileApiKeyInput.type === 'password' ? 'text' : 'password';
+        this.dom.profileApiKeyInput.type = type;
+        this.dom.profileToggleKeyVisibilityBtn.innerHTML = type === 'password'
+          ? `<i data-lucide="eye" class="w-4 h-4"></i>`
+          : `<i data-lucide="eye-off" class="w-4 h-4 text-purple-400"></i>`;
+        if (window.lucide) window.lucide.createIcons();
+      });
+    }
+
+    // Clique no Avatar do Drawer Lateral para abrir personalização
+    const drawerAvatarCard = document.getElementById('drawer-user-avatar-container');
+    if (drawerAvatarCard) {
+      drawerAvatarCard.classList.add('cursor-pointer', 'hover:scale-105', 'transition-transform');
+      drawerAvatarCard.title = 'Personalizar Emoji de Avatar';
+      drawerAvatarCard.addEventListener('click', () => {
+        soundFx.playClick();
+        if (this.app) this.app.closeMobileDrawer();
+        this.openProfileModal();
+      });
+    }
+
+    const drawerAuthCard = document.getElementById('drawer-auth-card');
+    if (drawerAuthCard) {
+      const drawerInfo = drawerAuthCard.querySelector('.min-w-0');
+      if (drawerInfo) {
+        drawerInfo.classList.add('cursor-pointer');
+        drawerInfo.title = 'Personalizar Apelido e Emoji';
+        drawerInfo.addEventListener('click', () => {
+          soundFx.playClick();
+          if (this.app) this.app.closeMobileDrawer();
+          this.openProfileModal();
+        });
+      }
     }
 
     // Fechar Modais
@@ -341,7 +658,9 @@ export class AuthManager {
   }
 
   loginAsGuest(nickname, avatarEmoji = '🎓') {
-    const guestId = 'guest_' + Math.random().toString(36).substring(2, 9);
+    const guestId = (this.currentUser && this.currentUser.uid && this.currentUser.isGuest)
+      ? this.currentUser.uid
+      : ('guest_' + Math.random().toString(36).substring(2, 9));
     this.currentUser = {
       uid: guestId,
       name: nickname,
@@ -350,6 +669,8 @@ export class AuthManager {
       avatarEmoji: avatarEmoji,
       provider: 'guest'
     };
+    this.setLocalAvatar(avatarEmoji);
+    this.setLocalNickname(nickname);
     this.saveSessionUser(this.currentUser);
     this.closeGuestModal();
     soundFx.playVictory();
@@ -547,12 +868,19 @@ export class AuthManager {
       throw new Error('Senha incorreta para este email.');
     }
 
+    const localApiKey = user.geminiApiKey || localStorage.getItem(`QUIZMASTER_USER_AI_KEY_${user.uid}`) || '';
     this.currentUser = {
       uid: user.uid,
       email: user.email,
       name: user.name,
+      avatarEmoji: user.avatarEmoji || this.getLocalAvatar(),
+      geminiApiKey: localApiKey,
+      isGuest: false,
       provider: 'local'
     };
+    if (localApiKey) {
+      aiService.setApiKey(localApiKey);
+    }
     this.saveSessionUser(this.currentUser);
     return this.currentUser;
   }
@@ -562,8 +890,10 @@ export class AuthManager {
       const { signOut } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
       await signOut(serverlessDB.auth);
     }
-    this.currentUser = null;
-    this.saveSessionUser(null);
+    this.currentUser = this.getDefaultGuestUser();
+    this.saveSessionUser(this.currentUser);
+    const fallbackKey = localStorage.getItem('QUIZMASTER_AI_API_KEY') || '';
+    aiService.setApiKey(fallbackKey);
     this.closeProfileModal();
     this.updateUI();
     this.notifyListeners();
@@ -624,13 +954,13 @@ export class AuthManager {
         serverlessDB.saveLocalUsers(localUsers);
       }
 
-      // 3. Limpa storage particionado do usuário, sessão local e atualiza interface
+      // 3. Limpa storage particionado do usuário, restaura perfil convidado e atualiza interface
       try {
         localStorage.removeItem(`QUIZMASTER_USER_QUIZZES_${uid}`);
       } catch (e) {}
 
-      this.currentUser = null;
-      this.saveSessionUser(null);
+      this.currentUser = this.getDefaultGuestUser();
+      this.saveSessionUser(this.currentUser);
       this.closeProfileModal();
       this.updateUI();
       this.notifyListeners();
@@ -643,18 +973,43 @@ export class AuthManager {
   }
 
   openProfileModal() {
-    if (!this.currentUser) return;
+    if (!this.currentUser) {
+      this.currentUser = this.getDefaultGuestUser();
+    }
     const isGuest = !!this.currentUser.isGuest;
+
     if (this.dom.profileEmailText) {
-      this.dom.profileEmailText.textContent = isGuest ? '🎮 Jogador Convidado (Sem conta permanente)' : this.currentUser.email;
+      this.dom.profileEmailText.textContent = isGuest 
+        ? '🎮 Modo Convidado / Offline (Sem conta permanente)' 
+        : this.currentUser.email;
     }
     if (this.dom.profileNameText) {
-      this.dom.profileNameText.textContent = this.currentUser.name;
+      this.dom.profileNameText.textContent = this.currentUser.name || 'Jogador';
+    }
+    if (this.dom.profileNicknameInput) {
+      this.dom.profileNicknameInput.value = this.currentUser.name || 'Jogador';
     }
 
-    const currentEmoji = this.currentUser.avatarEmoji || '🎓';
+    const currentEmoji = this.currentUser.avatarEmoji || this.getLocalAvatar();
     if (this.dom.profileAvatarDisplay) {
       this.dom.profileAvatarDisplay.textContent = currentEmoji;
+    }
+
+    // Alterna botões exclusivos para convidados vs contas registradas
+    if (this.dom.profileLoginPromptBtn) {
+      this.dom.profileLoginPromptBtn.classList.toggle('hidden', !isGuest);
+    }
+    if (this.dom.logoutBtn) {
+      this.dom.logoutBtn.classList.toggle('hidden', isGuest);
+    }
+    if (this.dom.deleteAccountBtn) {
+      this.dom.deleteAccountBtn.classList.toggle('hidden', isGuest);
+    }
+
+    // Atualiza campo e badge de status da Chave de API Google Gemini
+    this.updateProfileApiKeyUI();
+    if (this.dom.profileApiKeyFeedback) {
+      this.dom.profileApiKeyFeedback.classList.add('hidden');
     }
 
     // Renderiza a grade com todos os 40 emojis de avatar
@@ -675,14 +1030,17 @@ export class AuthManager {
         btn.addEventListener('click', async () => {
           soundFx.playClick();
           this.currentUser.avatarEmoji = emoji;
+          this.setLocalAvatar(emoji);
           this.saveSessionUser(this.currentUser);
+
           if (this.dom.profileAvatarDisplay) {
             this.dom.profileAvatarDisplay.textContent = emoji;
           }
           this.openProfileModal();
           this.updateUI();
+          this.notifyListeners();
 
-          // Sincroniza com Firebase se logado com conta
+          // Sincroniza com Firebase se logado com conta permanente
           if (!isGuest && serverlessDB.isCloudEnabled && serverlessDB.firestore) {
             try {
               const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
@@ -764,45 +1122,75 @@ export class AuthManager {
     const drawerAuthBtn = document.getElementById('drawer-auth-btn');
     const drawerUserAvatarText = document.getElementById('drawer-user-avatar-text');
 
-    const userEmoji = (this.currentUser && this.currentUser.avatarEmoji) ? this.currentUser.avatarEmoji : '🎓';
+    const isGuest = !this.currentUser || !!this.currentUser.isGuest;
+    const userEmoji = (this.currentUser && this.currentUser.avatarEmoji) ? this.currentUser.avatarEmoji : this.getLocalAvatar();
+    const userName = (this.currentUser && this.currentUser.name) ? this.currentUser.name : this.getLocalNickname();
 
-    if (this.currentUser) {
-      if (this.dom.authBtn) this.dom.authBtn.classList.add('hidden');
-      if (this.dom.userProfileBtn) {
-        this.dom.userProfileBtn.classList.remove('hidden');
-        if (this.dom.userAvatarText) {
-          this.dom.userAvatarText.textContent = userEmoji;
-        }
-        if (this.dom.userDisplayName) {
-          this.dom.userDisplayName.textContent = this.currentUser.name;
-        }
+    // 1. Atualiza elementos de texto e avatar no Header e Telas
+    if (this.dom.userAvatarText) {
+      this.dom.userAvatarText.textContent = userEmoji;
+    }
+    if (this.dom.userDisplayName) {
+      this.dom.userDisplayName.textContent = userName;
+    }
+    if (this.dom.mobileUserAvatarText) {
+      this.dom.mobileUserAvatarText.textContent = userEmoji;
+    }
+    if (this.dom.welcomePlayerAvatarText) {
+      this.dom.welcomePlayerAvatarText.textContent = userEmoji;
+    }
+    if (this.dom.welcomePlayerNameText) {
+      this.dom.welcomePlayerNameText.textContent = userName;
+    }
+    if (drawerUserAvatarText) {
+      drawerUserAvatarText.textContent = userEmoji;
+    }
+    if (drawerUserName) {
+      drawerUserName.textContent = userName;
+    }
+
+    // 2. Botão de perfil (sempre visível para permitir personalizar avatar mesmo sem conta)
+    if (this.dom.userProfileBtn) {
+      this.dom.userProfileBtn.classList.remove('hidden');
+      this.dom.userProfileBtn.title = isGuest ? 'Meu Perfil (Convidado - Personalizar Emoji e Nome)' : 'Meu Perfil';
+    }
+    if (this.dom.mobileUserProfileBtn) {
+      this.dom.mobileUserProfileBtn.classList.remove('hidden');
+      this.dom.mobileUserProfileBtn.title = isGuest ? 'Personalizar Emoji de Avatar' : 'Meu Perfil';
+    }
+
+    // 3. Botão "Entrar" no Header Desktop: visível se convidado/sem conta permanente
+    if (this.dom.authBtn) {
+      if (isGuest) {
+        this.dom.authBtn.classList.remove('hidden');
+        this.dom.authBtn.title = 'Entrar ou Criar Conta Permanente na Nuvem';
+      } else {
+        this.dom.authBtn.classList.add('hidden');
       }
+    }
 
-      if (drawerUserName) drawerUserName.textContent = this.currentUser.name || 'Usuário';
-      if (drawerUserStatus) drawerUserStatus.textContent = this.currentUser.email || 'Conectado';
-      if (drawerUserAvatarText) drawerUserAvatarText.textContent = userEmoji;
-      if (drawerAuthBtn) {
+    // 4. Drawer lateral
+    if (drawerUserStatus) {
+      drawerUserStatus.textContent = isGuest ? '🎮 Jogador Convidado (Sem conta)' : (this.currentUser.email || 'Conectado');
+    }
+    if (drawerAuthBtn) {
+      if (isGuest) {
+        drawerAuthBtn.textContent = 'Entrar';
+        drawerAuthBtn.title = 'Fazer Login ou Criar Conta';
+        drawerAuthBtn.onclick = () => {
+          if (this.app) this.app.closeMobileDrawer();
+          this.openAuthModal();
+        };
+      } else {
         drawerAuthBtn.textContent = 'Perfil';
+        drawerAuthBtn.title = 'Gerenciar Perfil';
         drawerAuthBtn.onclick = () => {
           if (this.app) this.app.closeMobileDrawer();
           this.openProfileModal();
         };
       }
-    } else {
-      if (this.dom.authBtn) this.dom.authBtn.classList.remove('hidden');
-      if (this.dom.userProfileBtn) this.dom.userProfileBtn.classList.add('hidden');
-
-      if (drawerUserName) drawerUserName.textContent = 'Minha Conta';
-      if (drawerUserStatus) drawerUserStatus.textContent = 'Banco Local (GitHub Pages)';
-      if (drawerUserAvatarText) drawerUserAvatarText.textContent = '🎓';
-      if (drawerAuthBtn) {
-        drawerAuthBtn.textContent = 'Entrar';
-        drawerAuthBtn.onclick = () => {
-          if (this.app) this.app.closeMobileDrawer();
-          this.openAuthModal();
-        };
-      }
     }
+
     if (window.lucide) window.lucide.createIcons();
   }
 }
